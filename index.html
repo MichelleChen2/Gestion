@@ -7,31 +7,766 @@
   <style>
     :root{--bg:#f3f4f6;--panel:#fff;--soft:#f8fafc;--text:#111827;--muted:#6b7280;--border:#e5e7eb;--accent:#5b5cf0;--accent-soft:#ececff;--danger:#b42318;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text)} button,input,select,textarea{font:inherit} button{cursor:pointer}
-    .app{max-width:1180px;margin:24px auto;padding:0 16px}.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px}.sidebar,.content{background:var(--panel);border:1px solid var(--border);border-radius:14px}.sidebar{padding:14px;min-height:680px}.brand{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--border);padding:4px 4px 14px;margin-bottom:12px}.brand-icon{width:40px;height:40px;border-radius:10px;background:var(--accent-soft);display:grid;place-items:center;font-weight:800}.brand small,.muted{color:var(--muted)}.nav{display:flex;flex-direction:column;gap:5px}.nav button{border:0;background:transparent;text-align:left;padding:11px 12px;border-radius:9px;color:var(--muted)}.nav button.active{background:var(--accent);color:#fff;font-weight:700}.content{padding:20px;min-width:0}.topbar{display:flex;justify-content:space-between;align-items:center;gap:14px;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:18px}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}h1,h2,h3,p{margin-top:0}h1{font-size:23px;margin-bottom:0}h3{margin-bottom:6px}.user{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:10px;padding:8px 10px}.avatar{width:34px;height:34px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:700}.user small{display:block;color:var(--muted)}.panel{display:none}.panel.active{display:block}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--panel)}.soft{background:var(--soft)}.metric-label{font-size:14px;color:var(--muted)}.metric{font-size:26px;font-weight:800;margin-top:3px}.link-btn{border:0;background:transparent;color:var(--accent);padding:10px 0 0;font-weight:700}.actions{margin-top:16px;padding:16px;border-radius:12px;background:var(--soft)}.actions-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}.action{border:1px solid var(--border);background:#fff;border-radius:9px;padding:12px;text-align:left}.section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px}.primary{border:0;background:var(--accent);color:#fff;font-weight:700;border-radius:9px;padding:10px 14px}.secondary{border:1px solid var(--border);background:#fff;border-radius:9px;padding:9px 12px}.form-card{border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}label{font-size:14px;font-weight:600}input,select,textarea{width:100%;margin-top:5px;padding:10px 11px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text)}textarea{resize:vertical}.form-actions{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}table{border-collapse:collapse;width:100%;min-width:620px}thead{background:#eef2f7;text-align:left}th,td{padding:11px 12px;font-size:14px;border-top:1px solid var(--border)}thead th{border-top:0}.status{display:none;margin-bottom:14px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;background:var(--soft);font-size:14px}.work-layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px}.fund-grid,.assembly-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.vote-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.vote-actions button.selected{background:var(--accent-soft);border-color:var(--accent)}.hidden{display:none!important}.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;background:#ecfdf3;color:#067647}.badge.off{background:#fef3f2;color:#b42318}
-    @media(max-width:860px){.layout{grid-template-columns:1fr}.sidebar{min-height:auto}.nav{flex-direction:row;overflow-x:auto}.nav button{white-space:nowrap}.grid3,.grid2,.fund-grid,.assembly-grid,.work-layout{grid-template-columns:1fr}}
-    @media(max-width:560px){.app{padding:0 10px;margin:12px auto}.content{padding:14px}.topbar{align-items:flex-start;flex-direction:column}.form-grid,.actions-grid{grid-template-columns:1fr}.section-head{flex-direction:column}}
-  </style>
+    .app{max-width:1240px;margin:24px auto;padding:0 16px}.layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px}.sidebar,.content{background:var(--panel);border:1px solid var(--border);border-radius:14px}.sidebar{padding:14px;min-height:680px}.brand{
+      display:grid;
+      grid-template-columns:40px minmax(0,1fr);
+      column-gap:12px;
+      align-items:center;
+      border-bottom:1px solid var(--border);
+      padding:6px 4px 16px;
+      margin-bottom:12px;
+      min-width:0
+    }
+    .brand-icon{
+      width:40px;
+      height:40px;
+      border-radius:10px;
+      background:var(--accent-soft);
+      display:grid;
+      place-items:center;
+      font-weight:800
+    }
+    .brand-copy{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      line-height:1.15
+    }
+    .brand-name{
+      display:block;
+      font-size:17px;
+      font-weight:800;
+      color:var(--text);
+      white-space:nowrap
+    }
+    .brand-subtitle{
+      display:block;
+      margin-top:4px;
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap
+    }
+    .muted{color:var(--muted)}.nav{display:flex;flex-direction:column;gap:5px}.nav button{border:0;background:transparent;text-align:left;padding:11px 12px;border-radius:9px;color:var(--muted)}.nav button.active{background:var(--accent);color:#fff;font-weight:700}.content{padding:20px;min-width:0}.topbar{display:flex;justify-content:space-between;align-items:center;gap:14px;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:18px}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}h1,h2,h3,p{margin-top:0}h1{font-size:23px;margin-bottom:0}h3{margin-bottom:6px}.user{display:flex;align-items:center;gap:9px;border:1px solid var(--border);border-radius:10px;padding:8px 10px}.avatar{width:34px;height:34px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:700}.user small{display:block;color:var(--muted)}.panel{display:none}.panel.active{display:block}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--panel)}.soft{background:var(--soft)}.metric-label{font-size:14px;color:var(--muted)}.metric{font-size:26px;font-weight:800;margin-top:3px}.link-btn{border:0;background:transparent;color:var(--accent);padding:10px 0 0;font-weight:700}.actions{margin-top:16px;padding:16px;border-radius:12px;background:var(--soft)}.actions-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}.action{border:1px solid var(--border);background:#fff;border-radius:9px;padding:12px;text-align:left}.section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px}.primary{border:0;background:var(--accent);color:#fff;font-weight:700;border-radius:9px;padding:10px 14px}.secondary{border:1px solid var(--border);background:#fff;border-radius:9px;padding:9px 12px}.form-card{border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}label{font-size:14px;font-weight:600}input,select,textarea{width:100%;margin-top:5px;padding:10px 11px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text)}textarea{resize:vertical}.form-actions{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}table{border-collapse:collapse;width:100%;min-width:620px}thead{background:#eef2f7;text-align:left}th,td{padding:11px 12px;font-size:14px;border-top:1px solid var(--border)}thead th{border-top:0}.status{display:none;margin-bottom:14px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;background:var(--soft);font-size:14px}.work-layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px}.fund-grid,.assembly-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.vote-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.vote-actions button.selected{background:var(--accent-soft);border-color:var(--accent)}.hidden{display:none!important}.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;background:#ecfdf3;color:#067647}.badge.off{background:#fef3f2;color:#b42318}
+
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap}.helper{font-size:12px;color:var(--muted);margin-top:4px}
+    .validation{border:1px solid var(--border);background:var(--soft);padding:12px;border-radius:10px;margin-top:12px}.validation ul{margin:8px 0 0;padding-left:18px}.validation .bad{color:var(--danger)}.validation .good{color:#067647}
+    .capital-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}.capital-summary>div{background:var(--soft);padding:11px;border-radius:9px}.capital-summary strong{display:block;font-size:18px;margin-top:3px}
+    .danger-btn{border:1px solid #fecaca;background:#fff;color:var(--danger);border-radius:9px;padding:9px 12px}.badge.pending{background:#fff7ed;color:#b54708}
+    .role-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.role-card{border:1px solid var(--border);border-radius:14px;padding:16px;background:linear-gradient(180deg,#fff 0%,var(--soft) 100%);min-height:118px}
+.role-card-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.role-icon{width:36px;height:36px;border-radius:11px;background:var(--accent-soft);color:#4338ca;display:grid;place-items:center;font-weight:800}
+.role-card-title{font-size:13px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.role-person{font-size:17px;font-weight:800;margin-bottom:4px}
+.role-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ok);font-weight:700}
+.role-status:before{content:"";width:7px;height:7px;border-radius:50%;background:#12b76a}
+.role-status.vacant{color:var(--muted);font-weight:600}
+.role-status.vacant:before{background:#cbd5e1}
+.role-help{display:block;margin-top:5px;font-size:12px;color:var(--muted)}
+.role-badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;background:var(--accent-soft);color:#4338ca;font-weight:700}
+.role-badge.associate{background:#eef2f7;color:#475569}
+.role-error{display:none;margin-top:10px;padding:10px;border-radius:8px;background:#fff1f2;border:1px solid #fecdd3;color:#9f1239;font-size:14px}
+.role-note{margin-top:12px;padding:11px 12px;border:1px solid #dbeafe;border-radius:10px;background:#f8fbff;color:#475569}
+.members-intro{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px}
+.members-intro h3{font-size:20px;margin-bottom:5px}
+.members-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.authorities-panel{border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px;background:#fff}
+.authorities-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.authorities-head h3{margin-bottom:4px}
+.authorities-label{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#4338ca;background:var(--accent-soft);padding:6px 9px;border-radius:999px}
+.auto-save-note{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-top:10px}
+.auto-save-note:before{content:"✓";display:grid;place-items:center;width:17px;height:17px;border-radius:50%;background:#ecfdf3;color:var(--ok);font-weight:800}.role-card .secondary{font-size:13px}.role-card button{min-height:38px}select option:disabled{color:#9ca3af}
+    dialog{border:0;border-radius:14px;max-width:620px;width:calc(100% - 30px);padding:0;box-shadow:0 24px 70px rgba(0,0,0,.2)}dialog::backdrop{background:rgba(17,24,39,.45)}.modal-inner{padding:20px}
+
+    @media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{min-height:auto}.nav{flex-direction:row;overflow-x:auto}.nav button{white-space:nowrap}.grid3,.grid2,.fund-grid,.assembly-grid,.work-layout,.capital-summary,.role-summary{grid-template-columns:1fr}}
+    @media(max-width:560px){
+      .app{padding:0 10px;margin:12px auto}
+      .content{padding:14px}
+      .sidebar{padding:12px}
+      .brand{padding-left:2px;padding-right:2px}
+      .brand-name{font-size:16px}
+      .brand-subtitle{font-size:11px}
+      .topbar{align-items:flex-start;flex-direction:column}
+      .form-grid,.actions-grid{grid-template-columns:1fr}
+      .section-head,.members-intro,.authorities-head{flex-direction:column}
+      .members-actions{justify-content:flex-start}
+    }
+  
+.member-list-panel{border:1px solid var(--border);border-radius:14px;padding:18px;background:#fff}
+.member-list-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+.member-list-head h3{margin-bottom:4px}
+.member-filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.member-filters input{width:240px;margin:0}
+.member-filters select{width:auto;min-width:130px;margin:0}
+.members-list{display:grid;gap:10px}
+.member-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--panel)}
+.member-row:hover{border-color:#c7d2fe;box-shadow:0 3px 12px rgba(17,24,39,.04)}
+.member-avatar{width:42px;height:42px;border-radius:12px;background:var(--accent-soft);display:grid;place-items:center;color:#4338ca;font-weight:800}
+.member-info{min-width:0}
+.member-name-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px}
+.member-name{font-weight:800;font-size:15px}
+.member-subline{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.member-role-line{margin-top:7px}
+.member-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.member-actions .secondary,.member-actions .danger-btn{white-space:nowrap}
+.members-empty{display:none;padding:26px 14px;text-align:center;color:var(--muted);background:var(--soft);border-radius:10px}
+.member-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
+.page-info{font-size:13px;color:var(--muted);text-align:center}
+.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.detail-item{background:var(--soft);border-radius:9px;padding:11px}
+.detail-item span{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
+.detail-item strong{font-size:14px}
+@media(max-width:760px){
+  .member-list-head{flex-direction:column}
+  .member-filters{width:100%}
+  .member-filters input,.member-filters select{width:100%}
+  .member-row{grid-template-columns:auto minmax(0,1fr)}
+  .member-actions{grid-column:1/-1;justify-content:flex-start;padding-left:56px}
+  .member-pagination{flex-wrap:wrap}
+  .detail-grid{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .member-row{grid-template-columns:1fr}
+  .member-avatar{display:none}
+  .member-actions{padding-left:0}
+}
+
+</style>
 </head>
 <body>
 <main class="app"><div class="layout">
-<aside class="sidebar"><div class="brand"><div class="brand-icon">C</div><div><strong>CoopGestión</strong><small>Administración</small></div></div><nav class="nav"><button class="active" data-view="inicio">Inicio</button><button data-view="socios">Socios y aportes</button><button data-view="trabajo">Trabajo</button><button data-view="finanzas">Ingresos y gastos</button><button data-view="retiros">Retiros y excedentes</button><button data-view="fondos">Fondos</button><button data-view="asamblea">Asamblea</button></nav></aside>
+<aside class="sidebar"><div class="brand"><div class="brand-icon">C</div><div class="brand-copy"><span class="brand-name">CoopGestión</span><span class="brand-subtitle">Administración</span></div></div><nav class="nav"><button class="active" data-view="inicio">Inicio</button><button data-view="socios">Socios y aportes</button><button data-view="trabajo">Trabajo</button><button data-view="finanzas">Ingresos y gastos</button><button data-view="retiros">Retiros y excedentes</button><button data-view="fondos">Fondos</button><button data-view="asamblea">Asamblea</button></nav></aside>
 <section class="content"><div class="topbar"><div><div class="eyebrow">Cooperativa de Trabajo</div><h1 id="page-title">Resumen general</h1></div><div class="user"><div class="avatar">JP</div><div><strong>Juan Pérez</strong><small>Administrador</small></div></div></div><div id="status" class="status"></div>
 <section class="panel active" data-panel="inicio"><div class="grid3"><div class="card"><div class="metric-label">Socios activos</div><div id="metric-members" class="metric">4</div><button class="link-btn" data-go="socios">Ver socios →</button></div><div class="card"><div class="metric-label">Horas del período</div><div id="metric-hours" class="metric">102 h</div><button class="link-btn" data-go="trabajo">Registrar trabajo →</button></div><div class="card"><div class="metric-label">Resultado del período</div><div id="metric-balance" class="metric">$420.000</div><button class="link-btn" data-go="finanzas">Ver movimientos →</button></div></div><div class="actions"><h3>Tareas frecuentes</h3><div class="actions-grid"><button class="action" data-go="trabajo">＋ Registrar horas trabajadas</button><button class="action" data-go="finanzas">＋ Registrar ingreso o gasto</button><button class="action" data-go="socios">＋ Alta de socio</button><button class="action" data-go="asamblea">＋ Preparar asamblea</button></div></div></section>
-<section class="panel" data-panel="socios"><div class="section-head"><div><h3>Socios, altas, bajas y aportes</h3><p class="muted">Registro de socios y aportes de la cooperativa.</p></div><button id="show-member-form" class="primary">＋ Nuevo socio</button></div><form id="member-form" class="form-card hidden"><div class="form-grid"><label>Nombre y apellido<input id="member-name" required maxlength="60"></label><label>Aporte inicial ($)<input id="member-contribution" type="number" min="0" step="100" value="10000" required></label></div><div class="form-actions"><button class="primary" type="submit">Registrar alta</button><button id="cancel-member" class="secondary" type="button">Cancelar</button></div></form><div class="table-wrap"><table><thead><tr><th>Socio</th><th>Alta</th><th>Aportes</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="members-body"></tbody></table></div></section>
-<section class="panel" data-panel="trabajo"><div class="work-layout"><form id="hours-form" class="form-card"><h3>Carga de trabajo</h3><p class="muted">Registrar el trabajo de un socio en el período.</p><label>Socio<select id="hours-member"></select></label><label>Fecha<input id="hours-date" type="date" value="2026-09-08"></label><label>Horas trabajadas<input id="hours-value" type="number" min="0.5" max="24" step="0.5" value="4"></label><label>Descripción<textarea id="hours-note" rows="2" maxlength="100" placeholder="Ej. clasificación, administración..."></textarea></label><div class="form-actions"><button class="primary">Registrar</button></div></form><div><h3>Historial del período</h3><div class="table-wrap"><table><thead><tr><th>Socio</th><th>Fecha</th><th>Horas</th><th>Detalle</th></tr></thead><tbody id="hours-body"></tbody></table></div></div></div></section>
+<section class="panel" data-panel="socios">
+<div class="members-intro">
+  <div>
+    <h3>Gestión de socios</h3>
+    <p class="muted">Consultá y actualizá la información de las personas asociadas a la cooperativa.</p>
+  </div>
+  <div class="members-actions">
+    <button id="show-member-form" class="primary" type="button">＋ Nuevo socio</button>
+    <label class="secondary" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">Importar datos<input id="import-members" type="file" accept=".json,application/json" style="display:none"></label>
+    <button id="export-members" class="secondary" type="button">Exportar datos</button>
+  </div>
+</div>
+<form id="member-form" class="form-card hidden" novalidate>
+  <div class="section-head">
+    <div><h3>Nuevo socio</h3><p class="muted">Completá los datos necesarios para incorporar un nuevo socio.</p></div>
+    <button id="cancel-member" class="secondary" type="button">Cancelar</button>
+  </div>
+  <div class="form-grid">
+    <label>Nombre y apellido *<input id="member-name" maxlength="80" autocomplete="name"></label>
+    <label>DNI *<input id="member-dni" inputmode="numeric" maxlength="12" placeholder="Ej. 30123456"></label>
+    <label>CUIT *<input id="member-cuit" inputmode="numeric" maxlength="13" placeholder="Ej. 20-30123456-9"><div class="helper">No puede duplicarse entre socios activos.</div></label>
+    <label>Correo electrónico *<input id="member-email" type="email" placeholder="nombre@correo.com"></label>
+  </div>
+  <div class="role-note"><strong>Rol inicial: Asociado.</strong> Los cargos de Presidente, Secretario y Tesorero se administran desde la sección de Autoridades.</div>
+  <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
+  <h3>Capital social</h3>
+  <div class="form-grid">
+    <label>Capital social suscripto ($) *<input id="member-capital" type="number" min="1" step="1000" value="370000"></label>
+    <label>Aporte inicial integrado ($) *<input id="member-initial-contribution" type="number" min="0" step="100" value="18500"><div class="helper">Debe ser al menos el 5% del capital suscripto.</div></label>
+  </div>
+  <div class="capital-summary">
+    <div><span class="muted">Mínimo requerido (5%)</span><strong id="minimum-contribution">$18.500</strong></div>
+    <div><span class="muted">Capital integrado</span><strong id="integrated-preview">$18.500</strong></div>
+    <div><span class="muted">Saldo pendiente</span><strong id="pending-preview">$351.500</strong></div>
+  </div>
+  <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
+  <h3>Monotributo</h3>
+  <div class="form-grid">
+    <label>Constancia de monotributo (PDF) *<input id="member-monotributo" type="file" accept="application/pdf,.pdf"><div class="helper">Se admite un archivo en formato PDF.</div></label>
+    <label>Estado del monotributo<select id="member-monotributo-status"><option value="Al día">Al día</option><option value="Pendiente de verificación">Pendiente de verificación</option></select></label>
+  </div>
+  <div class="validation"><strong>Requisitos para completar el alta</strong><ul id="member-validation-list"></ul></div>
+  <div class="form-actions"><button class="primary" type="submit">Registrar alta</button></div>
+</form>
+<section class="authorities-panel">
+  <div class="authorities-head">
+    <div>
+      <h3>Autoridades de la cooperativa</h3>
+      <p class="muted">Los cargos deben estar asignados. El Presidente puede ocupar además los cargos de Secretario y/o Tesorero.</p>
+    </div>
+    <span class="authorities-label">3 cargos</span>
+  </div>
+  <div id="role-summary" class="role-summary"></div>
+</section>
+<section class="member-list-panel">
+  <div class="member-list-head">
+    <div>
+      <h3>Listado de socios</h3>
+      <p class="muted">Buscá un socio o consultá sus datos sin desplazarte por una tabla.</p>
+    </div>
+    <div class="member-filters">
+      <input id="member-search" type="search" placeholder="Buscar por nombre, DNI o CUIT">
+      <select id="member-status-filter">
+        <option value="all">Todos</option>
+        <option value="active">Activos</option>
+        <option value="inactive">Bajas</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="members-list" class="members-list"></div>
+  <div id="members-empty" class="members-empty">No encontramos socios con esos filtros.</div>
+
+  <div class="member-pagination">
+    <button id="members-prev" type="button" class="secondary">← Anterior</button>
+    <div id="members-page-info" class="page-info"></div>
+    <button id="members-next" type="button" class="secondary">Siguiente →</button>
+  </div>
+</section>
+<div class="auto-save-note">Los cambios se guardan automáticamente. Podés importar o exportar una copia de los datos cuando lo necesites.</div>
+</section>
+<section class="panel" data-panel="trabajo"><div class="work-layout"><form id="hours-form" class="form-card" novalidate><h3>Carga de trabajo</h3><p class="muted">Registrar el trabajo de un socio en el período.</p><label>Socio<select id="hours-member"></select><div class="helper">Solo se pueden cargar horas a socios activos.</div></label><label>Fecha<input id="hours-date" type="date" value="2026-09-08"></label><label>Horas trabajadas<input id="hours-value" type="number" min="0.5" max="24" step="0.5" value="4"><div class="helper">Número positivo, mayor a 0 y menor a 24.</div></label><label>Descripción<textarea id="hours-note" rows="2" maxlength="100" placeholder="Ej. clasificación, administración..."></textarea></label><div class="validation"><strong>Antes de registrar</strong><ul id="hours-validation-list"></ul></div><div class="form-actions"><button class="primary" type="submit">Registrar</button></div></form><div><h3>Historial del período</h3><div class="table-wrap"><table><thead><tr><th>Socio</th><th>Fecha</th><th>Horas</th><th>Detalle</th><th>Acciones</th></tr></thead><tbody id="hours-body"></tbody></table></div></div></div></section>
 <section class="panel" data-panel="finanzas"><div class="grid3"><div class="card"><div class="metric-label">Ingresos</div><div id="income-total" class="metric">$0</div></div><div class="card"><div class="metric-label">Gastos</div><div id="expense-total" class="metric">$0</div></div><div class="card"><div class="metric-label">Saldo</div><div id="finance-balance" class="metric">$0</div></div></div><form id="finance-form" class="form-card" style="margin-top:14px"><div class="form-grid"><label>Tipo<select id="finance-type"><option>Ingreso</option><option>Gasto</option></select></label><label>Concepto<input id="finance-concept" maxlength="50" placeholder="Ej. venta" required></label><label>Monto ($)<input id="finance-amount" type="number" min="1" step="100" required></label></div><div class="form-actions"><button class="primary">Registrar</button></div></form><div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Concepto</th><th>Monto</th></tr></thead><tbody id="finance-body"></tbody></table></div></section>
-<section class="panel" data-panel="retiros"><div class="card"><h3>Anticipos de retiro y excedentes</h3><p class="muted">Pantalla conceptual para conversar durante la entrevista sobre cómo debería realizarse el cálculo real.</p><div class="form-grid"><label>Monto disponible para simular ($)<input id="distribution-total" type="number" min="0" step="1000" value="300000"></label></div><div class="form-actions"><button id="calculate-distribution" type="button" class="primary">Calcular simulación</button></div><p class="muted" style="margin-top:12px">En este prototipo se distribuye proporcionalmente según las horas registradas.</p></div><div id="distribution-results" class="grid2" style="margin-top:12px"></div></section>
+<section class="panel" data-panel="retiros"><div class="card"><h3>Anticipos de retiro y excedentes</h3><p class="muted">Consultá y calculá los anticipos y excedentes correspondientes al período.</p><div class="form-grid"><label>Monto disponible para simular ($)<input id="distribution-total" type="number" min="0" step="1000" value="300000"></label></div><div class="form-actions"><button id="calculate-distribution" type="button" class="primary">Calcular distribución</button></div><p class="muted" style="margin-top:12px">La estimación se calcula en función de las horas registradas en el período.</p></div><div id="distribution-results" class="grid2" style="margin-top:12px"></div></section>
 <section class="panel" data-panel="fondos"><div class="section-head"><div><h3>Fondos de la cooperativa</h3><p class="muted">Seguimiento de fondos que deben mantenerse o reservarse.</p></div></div><div class="fund-grid"><div class="card"><div class="metric-label">Fondo de reserva</div><div class="metric">$180.000</div><div class="muted">Último movimiento: +$20.000</div></div><div class="card"><div class="metric-label">Fondo operativo</div><div class="metric">$95.000</div><div class="muted">Disponible para operación</div></div><div class="card"><div class="metric-label">Total reservado</div><div class="metric">$275.000</div><div class="muted">Actualizado en el período</div></div></div><div class="form-actions"><button id="fund-movement" class="primary" type="button">Registrar movimiento de fondo</button></div><div id="fund-note" class="card soft hidden" style="margin-top:12px">En una versión posterior, esta acción podría pedir fondo, tipo de movimiento, monto, fecha y motivo.</div></section>
 <section class="panel" data-panel="asamblea"><div class="assembly-grid"><div class="card"><div class="eyebrow">1 · Padrón</div><h3>Socios habilitados</h3><div id="assembly-roster"></div></div><div class="card"><div class="eyebrow">2 · Votación</div><h3>Propuesta</h3><p>¿Aprobar la compra de nuevo equipamiento?</p><div class="vote-actions"><button type="button" class="secondary vote-btn" data-vote="A favor">A favor</button><button type="button" class="secondary vote-btn" data-vote="En contra">En contra</button><button type="button" class="secondary vote-btn" data-vote="Abstención">Abstención</button></div><p id="vote-result" class="muted" style="margin-top:12px">Todavía no registraste un voto de prueba.</p></div><div class="card"><div class="eyebrow">3 · Acta</div><h3>Registro de decisiones</h3><textarea id="minutes-text" rows="6" placeholder="Escriba acuerdos y decisiones..."></textarea><div class="form-actions"><button id="save-minutes" type="button" class="primary">Guardar borrador</button></div></div></div></section>
 </section></div></main>
+
+<dialog id="reactivate-dialog">
+  <div class="modal-inner">
+    <h3>CUIT perteneciente a un ex-socio</h3>
+    <p id="reactivate-text"></p>
+    <div class="form-actions">
+      <button id="reactivate-confirm" class="primary" type="button">Reincorporar socio</button>
+      <button id="reactivate-cancel" class="secondary" type="button">Cancelar</button>
+    </div>
+  </div>
+</dialog>
+
+
+<dialog id="role-dialog">
+  <div class="modal-inner">
+    <div class="section-head">
+      <div>
+        <h3 id="role-dialog-title">Cambiar autoridad</h3>
+        <p id="role-dialog-member" class="muted"></p>
+      </div>
+      <button id="role-dialog-close" class="secondary" type="button">Cerrar</button>
+    </div>
+
+    <label>Nuevo asociado responsable *
+      <select id="role-select"></select>
+    </label>
+
+    <div id="role-dialog-help" class="helper" style="margin-top:8px"></div>
+    <div id="role-dialog-error" class="role-error"></div>
+
+    <div class="form-actions">
+      <button id="role-save" class="primary" type="button">Confirmar asignación</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="member-detail-dialog">
+  <div class="modal-inner">
+    <div class="section-head">
+      <div>
+        <h3 id="member-detail-title">Datos del socio</h3>
+        <p id="member-detail-subtitle" class="muted"></p>
+      </div>
+      <button id="member-detail-close" class="secondary" type="button">Cerrar</button>
+    </div>
+    <div id="member-detail-content" class="detail-grid"></div>
+  </div>
+</dialog>
+
+
 <script>
-(()=>{const titles={inicio:'Resumen general',socios:'Socios y aportes',trabajo:'Registro de trabajo',finanzas:'Ingresos y gastos',retiros:'Retiros y excedentes',fondos:'Fondos de la cooperativa',asamblea:'Asamblea'};const members=[{name:'Juan Pérez',date:'12/03/2024',contribution:25000,active:true},{name:'María Ríos',date:'08/05/2024',contribution:25000,active:true},{name:'Carlos López',date:'21/06/2024',contribution:20000,active:true},{name:'Ana Gómez',date:'04/02/2025',contribution:20000,active:true}];const hours=[{name:'Juan Pérez',date:'05/09/2026',hours:30,note:'Administración'},{name:'María Ríos',date:'05/09/2026',hours:26,note:'Producción'},{name:'Carlos López',date:'06/09/2026',hours:24,note:'Logística'},{name:'Ana Gómez',date:'06/09/2026',hours:22,note:'Producción'}];const movements=[{type:'Ingreso',concept:'Venta mensual',amount:850000},{type:'Gasto',concept:'Insumos',amount:270000},{type:'Gasto',concept:'Servicios',amount:160000}];const money=n=>'$'+Math.max(0,Number(n)||0).toLocaleString('es-AR');const status=document.getElementById('status');function notify(msg){status.textContent=msg;status.style.display='block';setTimeout(()=>status.style.display='none',2200)}function go(view){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===view));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));document.getElementById('page-title').textContent=titles[view]||'CoopGestión';if(view==='asamblea')renderAssembly()}document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.view)));document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
-function renderMembers(){const body=document.getElementById('members-body');body.innerHTML='';members.forEach((m,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td><strong>${m.name}</strong></td><td>${m.date}</td><td>${money(m.contribution)}</td><td><span class="badge ${m.active?'':'off'}">${m.active?'Activo':'Baja'}</span></td><td><button type="button" class="secondary" data-toggle-member="${i}">${m.active?'Registrar baja':'Reactivar'}</button></td>`;body.appendChild(tr)});body.querySelectorAll('[data-toggle-member]').forEach(btn=>btn.addEventListener('click',()=>{const i=Number(btn.dataset.toggleMember);members[i].active=!members[i].active;renderMembers();renderMemberSelect();updateMetrics();renderAssembly();notify(members[i].active?'Socio reactivado.':'Baja registrada.')}))}
-function renderMemberSelect(){const sel=document.getElementById('hours-member');sel.innerHTML='';members.filter(m=>m.active).forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=m.name;sel.appendChild(o)})}
-document.getElementById('show-member-form').addEventListener('click',()=>document.getElementById('member-form').classList.remove('hidden'));document.getElementById('cancel-member').addEventListener('click',()=>document.getElementById('member-form').classList.add('hidden'));document.getElementById('member-form').addEventListener('submit',e=>{e.preventDefault();const name=document.getElementById('member-name').value.trim();const contribution=Math.max(0,Number(document.getElementById('member-contribution').value)||0);if(!name){notify('Ingresá el nombre del socio.');return}members.push({name,date:'08/09/2026',contribution,active:true});e.target.reset();document.getElementById('member-contribution').value='10000';e.target.classList.add('hidden');renderMembers();renderMemberSelect();updateMetrics();renderAssembly();notify('Alta de socio registrada.')});
-function renderHours(){const body=document.getElementById('hours-body');body.innerHTML='';hours.slice().reverse().forEach(h=>{const tr=document.createElement('tr');tr.innerHTML=`<td><strong>${h.name}</strong></td><td>${h.date}</td><td>${h.hours} h</td><td>${h.note||'—'}</td>`;body.appendChild(tr)})}document.getElementById('hours-form').addEventListener('submit',e=>{e.preventDefault();const name=document.getElementById('hours-member').value;const value=Math.min(24,Math.max(0.5,Number(document.getElementById('hours-value').value)||0));const rawDate=document.getElementById('hours-date').value;const note=document.getElementById('hours-note').value.trim();if(!name||!rawDate||!value){notify('Completá socio, fecha y horas.');return}const [y,m,d]=rawDate.split('-');hours.push({name,date:`${d}/${m}/${y}`,hours:value,note});document.getElementById('hours-note').value='';renderHours();updateMetrics();notify('Trabajo registrado.')});
-function renderFinance(){const body=document.getElementById('finance-body');body.innerHTML='';let inc=0,exp=0;movements.forEach(m=>{if(m.type==='Ingreso')inc+=m.amount;else exp+=m.amount;const tr=document.createElement('tr');tr.innerHTML=`<td>${m.type}</td><td><strong>${m.concept}</strong></td><td>${money(m.amount)}</td>`;body.appendChild(tr)});document.getElementById('income-total').textContent=money(inc);document.getElementById('expense-total').textContent=money(exp);document.getElementById('finance-balance').textContent=money(Math.max(0,inc-exp));document.getElementById('metric-balance').textContent=money(Math.max(0,inc-exp))}document.getElementById('finance-form').addEventListener('submit',e=>{e.preventDefault();const type=document.getElementById('finance-type').value;const concept=document.getElementById('finance-concept').value.trim();const amount=Math.max(0,Number(document.getElementById('finance-amount').value)||0);if(!concept||amount<=0){notify('Completá un concepto y un monto válido.');return}movements.push({type,concept,amount});e.target.reset();renderFinance();notify(type+' registrado.')});
-function updateMetrics(){document.getElementById('metric-members').textContent=members.filter(m=>m.active).length;const total=hours.reduce((s,h)=>s+h.hours,0);document.getElementById('metric-hours').textContent=total.toLocaleString('es-AR')+' h'}document.getElementById('calculate-distribution').addEventListener('click',()=>{const total=Math.max(0,Number(document.getElementById('distribution-total').value)||0);const active=members.filter(m=>m.active);const byName={};hours.forEach(h=>byName[h.name]=(byName[h.name]||0)+h.hours);const totalHours=active.reduce((s,m)=>s+(byName[m.name]||0),0);const box=document.getElementById('distribution-results');box.innerHTML='';if(total<=0||totalHours<=0){notify('No hay monto u horas suficientes para calcular.');return}active.forEach(m=>{const h=byName[m.name]||0;const share=total*(h/totalHours);const card=document.createElement('div');card.className='card';card.innerHTML=`<strong>${m.name}</strong><div class="muted">${h} h registradas</div><div class="metric">${money(Math.round(share))}</div>`;box.appendChild(card)});notify('Simulación actualizada.')});
-document.getElementById('fund-movement').addEventListener('click',()=>document.getElementById('fund-note').classList.toggle('hidden'));function renderAssembly(){const box=document.getElementById('assembly-roster');box.innerHTML='';members.filter(m=>m.active).forEach(m=>{const row=document.createElement('div');row.className='soft';row.style.cssText='padding:9px 10px;border-radius:8px;margin-top:7px';row.innerHTML=`<strong>${m.name}</strong><div class="muted">Habilitado</div>`;box.appendChild(row)})}document.querySelectorAll('.vote-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.vote-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');document.getElementById('vote-result').textContent='Voto de prueba registrado: '+btn.dataset.vote+'.'}));document.getElementById('save-minutes').addEventListener('click',()=>{const t=document.getElementById('minutes-text').value.trim();notify(t?'Borrador de acta guardado en el prototipo.':'Escribí alguna decisión antes de guardar.')});renderMembers();renderMemberSelect();renderHours();renderFinance();renderAssembly();updateMetrics()})();
+(()=>{
+const STORAGE_KEY='coopgestion_socios_v2';
+const SPECIAL_ROLES=['Presidente','Secretario','Tesorero'];
+const titles={inicio:'Resumen general',socios:'Socios y aportes',trabajo:'Registro de trabajo',finanzas:'Ingresos y gastos',retiros:'Retiros y excedentes',fondos:'Fondos de la cooperativa',asamblea:'Asamblea'};
+const defaultMembers=[
+{id:1,name:'Juan Pérez',dni:'30123456',cuit:'20-30123456-9',email:'juan@coop.test',date:'12/03/2024',capitalSubscribed:500000,capitalIntegrated:500000,monotributoFile:'constancia_juan.pdf',monotributoStatus:'Al día',roles:['Presidente'],active:true},
+{id:2,name:'María Ríos',dni:'33444555',cuit:'27-33444555-4',email:'maria@coop.test',date:'08/05/2024',capitalSubscribed:400000,capitalIntegrated:100000,monotributoFile:'constancia_maria.pdf',monotributoStatus:'Al día',roles:['Secretario'],active:true},
+{id:3,name:'Carlos López',dni:'28999111',cuit:'20-28999111-7',email:'carlos@coop.test',date:'21/06/2024',capitalSubscribed:370000,capitalIntegrated:50000,monotributoFile:'constancia_carlos.pdf',monotributoStatus:'Pendiente de verificación',roles:['Tesorero'],active:true},
+{id:4,name:'Ana Gómez',dni:'36777123',cuit:'27-36777123-2',email:'ana@coop.test',date:'04/02/2025',capitalSubscribed:370000,capitalIntegrated:370000,monotributoFile:'constancia_ana.pdf',monotributoStatus:'Al día',roles:[],active:true},
+{id:5,name:'Gonzalo Alispe',dni:'25444333',cuit:'20-25444333-8',email:'gonzalo@coop.test',date:'10/04/2024',capitalSubscribed:370000,capitalIntegrated:18500,monotributoFile:'constancia_gonzalo.pdf',monotributoStatus:'Al día',roles:[],active:false}
+];
+function normalizeMemberRoles(list){
+  list.forEach(m=>{
+    if(!Array.isArray(m.roles)){
+      const legacy=m.role;
+      m.roles=SPECIAL_ROLES.includes(legacy)?[legacy]:[];
+      delete m.role;
+    }
+    m.roles=[...new Set(m.roles.filter(r=>SPECIAL_ROLES.includes(r)))];
+    if(!m.active)m.roles=[];
+  });
+
+  const active=list.filter(m=>m.active);
+  if(!active.length)return list;
+
+  // Cada cargo debe tener exactamente un titular.
+  SPECIAL_ROLES.forEach((role,idx)=>{
+    const holders=active.filter(m=>m.roles.includes(role));
+    if(!holders.length){
+      const president=active.find(m=>m.roles.includes('Presidente'));
+      const target=(role!=='Presidente' && president) ? president : (active[idx]||active[0]);
+      if(!target.roles.includes(role))target.roles.push(role);
+    }else if(holders.length>1){
+      holders.slice(1).forEach(m=>m.roles=m.roles.filter(r=>r!==role));
+    }
+  });
+
+  // Regla de acumulación:
+  // - El Presidente puede ser también Secretario y/o Tesorero.
+  // - Un socio que no es Presidente no puede acumular dos cargos especiales.
+  active.forEach(m=>{
+    if(m.roles.includes('Presidente'))return;
+    const special=m.roles.filter(r=>r==='Secretario'||r==='Tesorero');
+    if(special.length>1){
+      // Conservamos el primero y liberamos el resto; normalizeMemberRoles
+      // volverá a cubrir cualquier cargo que quede sin titular.
+      const keep=special[0];
+      m.roles=m.roles.filter(r=>!['Secretario','Tesorero'].includes(r) || r===keep);
+    }
+  });
+
+  // Si al limpiar quedó algún cargo vacío, se lo asignamos preferentemente al Presidente.
+  SPECIAL_ROLES.forEach(role=>{
+    if(!active.some(m=>m.roles.includes(role))){
+      const president=active.find(m=>m.roles.includes('Presidente'));
+      const target=(role!=='Presidente' && president) ? president : active[0];
+      if(target && !target.roles.includes(role))target.roles.push(role);
+    }
+  });
+
+  return list;
+}
+
+function loadMembers(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const x=JSON.parse(raw);
+      if(Array.isArray(x)){
+        normalizeMemberRoles(x);
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(x));
+        return x;
+      }
+    }
+  }catch(e){}
+  const seed=normalizeMemberRoles(JSON.parse(JSON.stringify(defaultMembers)));
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(seed));
+  return seed;
+}
+let members=loadMembers();
+const HOURS_KEY='coopgestion_horas_v1';
+const defaultHours=[{name:'Juan Pérez',date:'05/09/2026',hours:30,note:'Administración'},{name:'María Ríos',date:'05/09/2026',hours:26,note:'Producción'},{name:'Carlos López',date:'06/09/2026',hours:24,note:'Logística'},{name:'Ana Gómez',date:'06/09/2026',hours:22,note:'Producción'}];
+function ensureHourIds(list){list.forEach((h,i)=>{if(h.id==null)h.id=Date.now()+i});return list}
+function loadHours(){let list;try{const raw=localStorage.getItem(HOURS_KEY);list=raw?JSON.parse(raw):null;if(!Array.isArray(list))list=null}catch(e){list=null}if(!list)list=JSON.parse(JSON.stringify(defaultHours));ensureHourIds(list);localStorage.setItem(HOURS_KEY,JSON.stringify(list));return list}
+let hours=loadHours();
+function persistHours(){localStorage.setItem(HOURS_KEY,JSON.stringify(hours))}
+const movements=[{type:'Ingreso',concept:'Venta mensual',amount:850000},{type:'Gasto',concept:'Insumos',amount:270000},{type:'Gasto',concept:'Servicios',amount:160000}];
+const $=id=>document.getElementById(id),money=n=>'$'+Math.max(0,Number(n)||0).toLocaleString('es-AR'),status=$('status');
+function persistMembers(){localStorage.setItem(STORAGE_KEY,JSON.stringify(members))}
+function notify(msg,type='ok'){status.textContent=msg;status.style.display='block';status.style.background=type==='error'?'#fff1f2':'#ecfdf3';status.style.borderColor=type==='error'?'#fecdd3':'#a7f3d0';status.style.color=type==='error'?'#9f1239':'#065f46';clearTimeout(notify.t);notify.t=setTimeout(()=>status.style.display='none',3200)}
+function go(view){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===view));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('page-title').textContent=titles[view]||'CoopGestión';if(view==='asamblea')renderAssembly()}
+document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.view)));
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
+const digits=v=>String(v||'').replace(/\D/g,'');
+function formatCUIT(v){const d=digits(v).slice(0,11);if(d.length<=2)return d;if(d.length<=10)return d.slice(0,2)+'-'+d.slice(2);return d.slice(0,2)+'-'+d.slice(2,10)+'-'+d.slice(10)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+function getCapital(){return Math.max(0,Number($('member-capital').value)||0)} function getInitial(){return Math.max(0,Number($('member-initial-contribution').value)||0)}
+function validationState(){const name=$('member-name').value.trim(),dni=digits($('member-dni').value),cuit=digits($('member-cuit').value),email=$('member-email').value.trim(),cap=getCapital(),ini=getInitial(),file=$('member-monotributo').files[0]||null,min=cap*.05;const activeDuplicate=members.find(m=>m.active&&digits(m.cuit)===cuit),inactiveDuplicate=members.find(m=>!m.active&&digits(m.cuit)===cuit),emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),pdfOk=file?(file.type==='application/pdf'||/\.pdf$/i.test(file.name)):false;return{nameOk:name.length>=3,dniOk:dni.length>=7,cuitOk:cuit.length===11,emailOk,capOk:cap>0,initialOk:cap>0&&ini>=min&&ini<=cap,fileOk:pdfOk,activeDuplicate,inactiveDuplicate,valid:name.length>=3&&dni.length>=7&&cuit.length===11&&emailOk&&cap>0&&ini>=min&&ini<=cap&&pdfOk&&!activeDuplicate}}
+function validateFormPreview(){const v=validationState(),items=[[v.nameOk,'Nombre y apellido completos'],[v.dniOk,'DNI informado'],[v.cuitOk,'CUIT con 11 dígitos'],[v.emailOk,'Correo electrónico válido'],[v.capOk,'Capital social suscripto mayor a $0'],[v.initialOk,'Aporte inicial entre el 5% mínimo y el 100% del capital'],[v.fileOk,'Constancia de monotributo en PDF'],[!v.activeDuplicate,'CUIT no duplicado entre socios activos']];$('member-validation-list').innerHTML=items.map(([ok,t])=>`<li class="${ok?'good':'bad'}">${ok?'✓':'✕'} ${t}</li>`).join('')}
+function updateCapitalPreview(){const cap=getCapital(),ini=getInitial(),min=cap*.05;$('minimum-contribution').textContent=money(Math.round(min));$('integrated-preview').textContent=money(ini);$('pending-preview').textContent=money(Math.max(0,cap-ini));validateFormPreview()}
+$('member-cuit').addEventListener('input',e=>{e.target.value=formatCUIT(e.target.value);validateFormPreview()});['member-dni','member-name','member-email'].forEach(id=>$(id).addEventListener('input',validateFormPreview));['member-capital','member-initial-contribution'].forEach(id=>$(id).addEventListener('input',updateCapitalPreview));$('member-monotributo').addEventListener('change',validateFormPreview);
+function resetMemberForm(){$('member-form').reset();$('member-capital').value='370000';$('member-initial-contribution').value='18500';$('member-monotributo-status').value='Al día';updateCapitalPreview()}
+$('show-member-form').addEventListener('click',()=>{$('member-form').classList.remove('hidden');$('member-name').focus();validateFormPreview()});$('cancel-member').addEventListener('click',()=>{$('member-form').classList.add('hidden');resetMemberForm()});
+let pendingReactivation=null;
+$('member-form').addEventListener('submit',e=>{e.preventDefault();const v=validationState();if(v.activeDuplicate){notify(`No se puede dar de alta: el CUIT ya pertenece a ${v.activeDuplicate.name}, socio activo.`,'error');return}if(v.inactiveDuplicate){pendingReactivation=v.inactiveDuplicate;$('reactivate-text').textContent=`El CUIT ingresado pertenece a ${v.inactiveDuplicate.name}, actualmente dado de baja. ¿Desea reincorporarlo en lugar de crear un registro duplicado?`;$('reactivate-dialog').showModal();return}if(!v.valid){notify('No se puede completar el alta. Revisá los campos obligatorios y los requisitos indicados.','error');validateFormPreview();return}createNewMember()});
+function createNewMember(){const cap=getCapital(),ini=getInitial(),file=$('member-monotributo').files[0],d=new Date(),date=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();members.push({id:Date.now(),name:$('member-name').value.trim(),dni:digits($('member-dni').value),cuit:formatCUIT($('member-cuit').value),email:$('member-email').value.trim(),date,capitalSubscribed:cap,capitalIntegrated:ini,monotributoFile:file.name,monotributoStatus:$('member-monotributo-status').value,roles:[],active:true});persistMembers();renderAll();$('member-form').classList.add('hidden');resetMemberForm();notify('Alta registrada. El socio quedó ACTIVO como Asociado.')}
+$('reactivate-confirm').addEventListener('click',()=>{if(!pendingReactivation)return;const v=validationState();if(!v.nameOk||!v.dniOk||!v.cuitOk||!v.emailOk||!v.capOk||!v.initialOk||!v.fileOk){$('reactivate-dialog').close();notify('Para reincorporar al socio deben completarse todos los campos obligatorios.','error');pendingReactivation=null;return}const file=$('member-monotributo').files[0];Object.assign(pendingReactivation,{name:$('member-name').value.trim(),dni:digits($('member-dni').value),email:$('member-email').value.trim(),capitalSubscribed:getCapital(),capitalIntegrated:getInitial(),monotributoFile:file.name,monotributoStatus:$('member-monotributo-status').value,roles:[],active:true});persistMembers();renderAll();$('reactivate-dialog').close();$('member-form').classList.add('hidden');resetMemberForm();notify('El ex-socio fue reincorporado como Asociado.');pendingReactivation=null});$('reactivate-cancel').addEventListener('click',()=>{$('reactivate-dialog').close();pendingReactivation=null});
+function memberSpecialRoles(member){
+  return Array.isArray(member.roles)?member.roles.filter(r=>SPECIAL_ROLES.includes(r)):[];
+}
+function displayRoles(member){
+  const roles=memberSpecialRoles(member);
+  return roles.length?roles:['Asociado'];
+}
+function roleBadges(member){
+  return displayRoles(member).map(role=>`<span class="role-badge ${role==='Asociado'?'associate':''}" style="margin:2px 3px 2px 0">${esc(role)}</span>`).join('');
+}
+function roleOccupant(role){
+  return members.find(m=>m.active&&memberSpecialRoles(m).includes(role))||null;
+}
+function activeMembers(){
+  return members.filter(m=>m.active);
+}
+function canMemberTakeRole(member,role){
+  if(!member||!member.active)return false;
+
+  const roles=memberSpecialRoles(member);
+
+  // El cargo de Presidente puede asignarse a un socio que ya sea
+  // Secretario o Tesorero; al pasar a Presidente conserva esos cargos.
+  if(role==='Presidente')return true;
+
+  // El Presidente puede ocupar además Secretaría y/o Tesorería.
+  if(roles.includes('Presidente'))return true;
+
+  // Para socios que no son Presidente, Secretario y Tesorero son excluyentes.
+  const otherSpecial=roles.filter(r=>r!==role);
+  return otherSpecial.length===0;
+}
+function renderRoleSummary(){
+  const box=$('role-summary');
+  if(!box)return;
+  const initials={Presidente:'P',Secretario:'S',Tesorero:'T'};
+
+  box.innerHTML=SPECIAL_ROLES.map(role=>{
+    const occupant=roleOccupant(role);
+    return `<div class="role-card">
+      <div class="role-card-top">
+        <div class="role-icon">${initials[role]}</div>
+        <div class="role-card-title">${role}</div>
+      </div>
+      <div class="role-person">${occupant?esc(occupant.name):'Sin asignar'}</div>
+      <span class="role-status ${occupant?'':'vacant'}">${occupant?'Cargo asignado':'Requiere asignación'}</span>
+      <button type="button" class="secondary" style="margin-top:12px;width:100%" data-change-authority="${role}">
+        Cambiar ${role.toLowerCase()}
+      </button>
+    </div>`;
+  }).join('');
+
+  box.querySelectorAll('[data-change-authority]').forEach(btn=>{
+    btn.addEventListener('click',()=>openRoleDialog(btn.dataset.changeAuthority));
+  });
+}
+
+let editingAuthorityRole=null;
+
+function openRoleDialog(role){
+  if(!SPECIAL_ROLES.includes(role))return;
+
+  const current=roleOccupant(role);
+  const active=activeMembers();
+  if(!active.length){
+    notify('No hay asociados activos disponibles para ocupar el cargo.','error');
+    return;
+  }
+
+  editingAuthorityRole=role;
+  $('role-dialog-title').textContent=`Cambiar ${role.toLowerCase()}`;
+  $('role-dialog-member').textContent=current
+    ? `Actualmente: ${current.name}. Para continuar tenés que seleccionar quién ocupará el cargo.`
+    : `Este cargo necesita un asociado responsable.`;
+
+  const select=$('role-select');
+  select.innerHTML='<option value="">— Seleccionar asociado —</option>';
+
+  active.forEach(member=>{
+    const allowed=canMemberTakeRole(member,role);
+    const currentForRole=current && String(current.id)===String(member.id);
+    const option=document.createElement('option');
+    option.value=member.id;
+    const other=memberSpecialRoles(member).filter(r=>r!==role);
+    option.textContent=member.name+(other.length?` (${other.join(', ')})`:'');
+    option.disabled=!allowed && !currentForRole;
+    if(currentForRole) option.selected=true;
+    select.appendChild(option);
+  });
+
+  $('role-dialog-help').textContent=
+    'El Presidente puede ocupar también los cargos de Secretario y/o Tesorero. Los demás asociados no pueden acumular más de un cargo especial.';
+
+  $('role-dialog-error').style.display='none';
+  $('role-dialog').showModal();
+}
+
+function closeRoleDialog(){
+  editingAuthorityRole=null;
+  $('role-dialog').close();
+  $('role-dialog-error').style.display='none';
+}
+function showRoleError(message){
+  const box=$('role-dialog-error');
+  box.textContent=message;
+  box.style.display='block';
+}
+
+function saveSelectedRole(){
+  if(!editingAuthorityRole)return;
+  const selectedId=$('role-select').value;
+  if(!selectedId){
+    showRoleError('Tenés que seleccionar un asociado para ocupar el cargo.');
+    return;
+  }
+
+  const target=members.find(m=>String(m.id)===String(selectedId));
+  if(!target||!target.active){
+    showRoleError('El asociado seleccionado no está activo.');
+    return;
+  }
+
+  if(!canMemberTakeRole(target,editingAuthorityRole)){
+    showRoleError('Solo el Presidente puede ocupar más de un cargo especial.');
+    return;
+  }
+
+  const previous=roleOccupant(editingAuthorityRole);
+
+  // El cargo nunca queda vacante: primero asignamos al nuevo titular y luego retiramos al anterior.
+  if(!target.roles.includes(editingAuthorityRole))target.roles.push(editingAuthorityRole);
+  if(previous && previous.id!==target.id){
+    previous.roles=memberSpecialRoles(previous).filter(r=>r!==editingAuthorityRole);
+  }
+
+  persistMembers();
+  renderAll();
+  closeRoleDialog();
+  notify(`${editingAuthorityRole} asignado a ${target.name}.`);
+}
+
+$('role-dialog-close').addEventListener('click',closeRoleDialog);
+$('role-save').addEventListener('click',saveSelectedRole);
+
+function authorityRolesOf(member){
+  return memberSpecialRoles(member);
+}
+
+let memberPage=1;
+const MEMBERS_PER_PAGE=4;
+
+function memberInitials(name){
+  return String(name||'')
+    .trim()
+    .split(/\s+/)
+    .slice(0,2)
+    .map(x=>x[0]||'')
+    .join('')
+    .toUpperCase() || 'S';
+}
+
+function filteredMembers(){
+  const query=($('member-search')?.value||'').trim().toLowerCase();
+  const statusFilter=$('member-status-filter')?.value||'all';
+
+  return members.filter(m=>{
+    const matchesStatus=
+      statusFilter==='all' ||
+      (statusFilter==='active' && m.active) ||
+      (statusFilter==='inactive' && !m.active);
+
+    const haystack=[
+      m.name,m.email,m.dni,m.cuit,
+      ...displayRoles(m)
+    ].join(' ').toLowerCase();
+
+    return matchesStatus && (!query || haystack.includes(query));
+  });
+}
+
+function showMemberDetail(id){
+  const m=members.find(x=>String(x.id)===String(id));
+  if(!m)return;
+
+  const pending=Math.max(0,(m.capitalSubscribed||0)-(m.capitalIntegrated||0));
+  $('member-detail-title').textContent=m.name;
+  $('member-detail-subtitle').textContent=`${displayRoles(m).join(' · ')} · ${m.active?'Activo':'Baja'}`;
+
+  const detailItems=[
+    ['DNI',m.dni||'—'],
+    ['CUIT',m.cuit||'—'],
+    ['Correo electrónico',m.email||'—'],
+    ['Fecha de alta',m.date||'—'],
+    ['Rol / cargos',displayRoles(m).join(', ')],
+    ['Estado',m.active?'Activo':'Baja'],
+    ['Capital suscripto',money(m.capitalSubscribed||0)],
+    ['Capital integrado',money(m.capitalIntegrated||0)],
+    ['Saldo pendiente',money(pending)],
+    ['Monotributo',m.monotributoStatus||'Sin información'],
+    ['Constancia',m.monotributoFile||'No cargada']
+  ];
+
+  $('member-detail-content').innerHTML=detailItems.map(([label,value])=>
+    `<div class="detail-item"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`
+  ).join('');
+
+  $('member-detail-dialog').showModal();
+}
+
+function toggleMemberState(id){
+  const m=members.find(x=>String(x.id)===String(id));
+  if(!m)return;
+
+  if(m.active){
+    const held=authorityRolesOf(m);
+    if(activeMembers().length<=1){
+      notify('No se puede dar de baja al único asociado activo porque los cargos obligatorios quedarían sin responsable.','error');
+      return;
+    }
+    if(held.length){
+      notify(`Antes de dar de baja a ${m.name}, reasigná ${held.join(', ')} desde Autoridades.`,'error');
+      return;
+    }
+    m.active=false;
+    m.roles=[];
+    persistMembers();
+    renderAll();
+    notify('Baja registrada.');
+  }else{
+    m.active=true;
+    m.roles=[];
+    persistMembers();
+    renderAll();
+    notify('Socio reactivado como Asociado.');
+  }
+}
+
+function renderMembers(){
+  const list=$('members-list');
+  if(!list)return;
+
+  const filtered=filteredMembers();
+  const totalPages=Math.max(1,Math.ceil(filtered.length/MEMBERS_PER_PAGE));
+  if(memberPage>totalPages)memberPage=totalPages;
+  if(memberPage<1)memberPage=1;
+
+  const startIndex=(memberPage-1)*MEMBERS_PER_PAGE;
+  const pageMembers=filtered.slice(startIndex,startIndex+MEMBERS_PER_PAGE);
+
+  list.innerHTML='';
+
+  pageMembers.forEach(m=>{
+    if(!Array.isArray(m.roles))m.roles=[];
+    const heldRoles=authorityRolesOf(m);
+    const card=document.createElement('article');
+    card.className='member-row';
+    card.innerHTML=`
+      <div class="member-avatar">${memberInitials(m.name)}</div>
+      <div class="member-info">
+        <div class="member-name-line">
+          <span class="member-name">${esc(m.name)}</span>
+          <span class="badge ${m.active?'':'off'}">${m.active?'Activo':'Baja'}</span>
+        </div>
+        <div class="member-subline">${esc(m.email||'Sin correo')} · CUIT ${esc(m.cuit||'—')}</div>
+        <div class="member-role-line">${roleBadges(m)}</div>
+        ${m.active&&heldRoles.length?`<div class="helper" style="margin-top:6px">Ocupa ${esc(heldRoles.join(', '))}</div>`:''}
+      </div>
+      <div class="member-actions">
+        <button type="button" class="secondary" data-view-member="${m.id}">Ver detalle</button>
+        <button type="button" class="${m.active?'danger-btn':'secondary'}" data-toggle-member-id="${m.id}">
+          ${m.active?'Registrar baja':'Reactivar'}
+        </button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+
+  $('members-empty').style.display=filtered.length?'none':'block';
+
+  const from=filtered.length?startIndex+1:0;
+  const to=Math.min(startIndex+MEMBERS_PER_PAGE,filtered.length);
+  $('members-page-info').textContent=filtered.length
+    ? `Mostrando ${from}–${to} de ${filtered.length} socios · Página ${memberPage} de ${totalPages}`
+    : '0 socios';
+
+  $('members-prev').disabled=memberPage<=1;
+  $('members-next').disabled=memberPage>=totalPages;
+
+  list.querySelectorAll('[data-view-member]').forEach(btn=>{
+    btn.addEventListener('click',()=>showMemberDetail(btn.dataset.viewMember));
+  });
+
+  list.querySelectorAll('[data-toggle-member-id]').forEach(btn=>{
+    btn.addEventListener('click',()=>toggleMemberState(btn.dataset.toggleMemberId));
+  });
+
+  renderRoleSummary();
+}
+
+$('member-search').addEventListener('input',()=>{
+  memberPage=1;
+  renderMembers();
+});
+$('member-status-filter').addEventListener('change',()=>{
+  memberPage=1;
+  renderMembers();
+});
+$('members-prev').addEventListener('click',()=>{
+  if(memberPage>1){
+    memberPage--;
+    renderMembers();
+    $('members-list').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+});
+$('members-next').addEventListener('click',()=>{
+  const totalPages=Math.max(1,Math.ceil(filteredMembers().length/MEMBERS_PER_PAGE));
+  if(memberPage<totalPages){
+    memberPage++;
+    renderMembers();
+    $('members-list').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+});
+$('member-detail-close').addEventListener('click',()=>$('member-detail-dialog').close());
+function renderMemberSelect(){const sel=$('hours-member'),prev=sel.value;sel.innerHTML='';members.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=m.name+(m.active?'':' (Baja)');sel.appendChild(o)});if(prev&&members.some(m=>m.name===prev))sel.value=prev;if(typeof renderHoursValidation==='function')renderHoursValidation()}
+function updateMetrics(){$('metric-members').textContent=members.filter(m=>m.active).length;const total=hours.reduce((s,h)=>s+h.hours,0);$('metric-hours').textContent=total.toLocaleString('es-AR')+' h'}
+function renderAssembly(){const box=$('assembly-roster');box.innerHTML='';members.filter(m=>m.active).forEach(m=>{const row=document.createElement('div');row.className='soft';row.style.cssText='padding:9px 10px;border-radius:8px;margin-top:7px';row.innerHTML=`<strong>${esc(m.name)}</strong><div class="muted">${esc(displayRoles(m).join(' · '))} · Habilitado</div>`;box.appendChild(row)})}
+function renderAll(){renderMembers();renderMemberSelect();updateMetrics();renderAssembly();renderRoleSummary()}
+$('export-members').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(members,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='socios_coopgestion.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);notify('JSON de socios y roles exportado.')});
+$('import-members').addEventListener('change',async e=>{
+  const file=e.target.files[0];
+  if(!file)return;
+  try{
+    const parsed=JSON.parse(await file.text());
+    if(!Array.isArray(parsed))throw new Error('El JSON debe contener una lista de socios.');
+
+    parsed.forEach(m=>{
+      if(!Array.isArray(m.roles)){
+        const legacy=m.role;
+        m.roles=SPECIAL_ROLES.includes(legacy)?[legacy]:[];
+        delete m.role;
+      }
+      m.roles=[...new Set(m.roles.filter(r=>SPECIAL_ROLES.includes(r)))];
+      if(!m.active)m.roles=[];
+    });
+
+    const active=parsed.filter(m=>m.active);
+    if(!active.length)throw new Error('Debe existir al menos un asociado activo.');
+
+    SPECIAL_ROLES.forEach(role=>{
+      const holders=active.filter(m=>m.roles.includes(role));
+      if(holders.length!==1)throw new Error(`El archivo debe tener exactamente un ${role.toLowerCase()} activo.`);
+    });
+
+    active.forEach(m=>{
+      const roles=m.roles.filter(r=>SPECIAL_ROLES.includes(r));
+      if(!roles.includes('Presidente') && roles.length>1){
+        throw new Error(`${m.name||'Un socio'} tiene más de un cargo especial sin ser Presidente.`);
+      }
+    });
+
+    members=parsed;
+    memberPage=1;
+    persistMembers();
+    renderAll();
+    notify('Socios y autoridades importados correctamente.');
+  }catch(err){
+    notify('No se pudo importar el JSON: '+err.message,'error');
+  }finally{
+    e.target.value='';
+  }
+});
+function renderHours(){const body=$('hours-body');body.innerHTML='';hours.slice().reverse().forEach(h=>{const tr=document.createElement('tr');tr.innerHTML=`<td><strong>${esc(h.name)}</strong></td><td>${h.date}</td><td>${h.hours} h</td><td>${esc(h.note||'—')}</td><td><button type="button" class="danger-btn" data-delete-hour="${h.id}" title="Eliminar registro" aria-label="Eliminar registro">🗑️</button></td>`;body.appendChild(tr)});body.querySelectorAll('[data-delete-hour]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteHour,h=hours.find(x=>String(x.id)===String(id));if(!h)return;if(!confirm(`¿Eliminar la carga de ${h.name} del ${h.date} (${h.hours} h)? Esta acción no se puede deshacer.`))return;hours=hours.filter(x=>String(x.id)!==String(id));persistHours();renderHours();updateMetrics();renderHoursValidation();notify('Registro de horas eliminado.')}))}
+function formatHoursDate(raw){if(!raw)return'';const [y,m,d]=raw.split('-');return `${d}/${m}/${y}`}
+function hoursValidationState(){const name=$('hours-member').value,member=members.find(m=>m.name===name),memberOk=!!member&&member.active,rawHours=$('hours-value').value,val=Number(rawHours),hoursOk=rawHours!==''&&Number.isFinite(val)&&val>0&&val<24,date=formatHoursDate($('hours-date').value),duplicate=!!(name&&date&&hours.some(h=>h.name===name&&h.date===date));return{member,memberOk,val,hoursOk,date,duplicate,noDuplicateOk:!duplicate,valid:memberOk&&hoursOk&&!duplicate}}
+function renderHoursValidation(){const v=hoursValidationState(),items=[[v.memberOk,'El socio seleccionado está activo'],[v.hoursOk,'Cantidad de horas positiva y menor a 24'],[v.noDuplicateOk,'No hay una carga previa para ese socio en esa fecha']];$('hours-validation-list').innerHTML=items.map(([ok,t])=>`<li class="${ok?'good':'bad'}">${ok?'✓':'✕'} ${t}</li>`).join('')}
+['hours-value','hours-date'].forEach(id=>$(id).addEventListener('input',renderHoursValidation));
+$('hours-member').addEventListener('change',renderHoursValidation);
+$('hours-form').addEventListener('submit',e=>{e.preventDefault();const name=$('hours-member').value,rawDate=$('hours-date').value,note=$('hours-note').value.trim();if(!name||!rawDate){notify('Completá socio y fecha.','error');return}const v=hoursValidationState();if(!v.memberOk){notify('No se pueden cargar horas a un usuario inactivo.','error');renderHoursValidation();return}if(!v.hoursOk){notify('La cantidad de horas ingresada es inválida. Debe ser un número positivo mayor a 0 y menor a 24.','error');renderHoursValidation();return}if(v.duplicate){notify('Ya se cargaron horas para ese socio en esa fecha. Corroborá la carga existente antes de continuar.','error');renderHoursValidation();return}hours.push({id:Date.now(),name,date:v.date,hours:v.val,note});persistHours();$('hours-note').value='';renderHours();updateMetrics();renderHoursValidation();notify('Trabajo registrado y guardado en el historial.')});
+function renderFinance(){const body=$('finance-body');body.innerHTML='';let inc=0,exp=0;movements.forEach(m=>{if(m.type==='Ingreso')inc+=m.amount;else exp+=m.amount;const tr=document.createElement('tr');tr.innerHTML=`<td>${m.type}</td><td><strong>${esc(m.concept)}</strong></td><td>${money(m.amount)}</td>`;body.appendChild(tr)});$('income-total').textContent=money(inc);$('expense-total').textContent=money(exp);$('finance-balance').textContent=money(Math.max(0,inc-exp));$('metric-balance').textContent=money(Math.max(0,inc-exp))}
+$('finance-form').addEventListener('submit',e=>{e.preventDefault();const type=$('finance-type').value,concept=$('finance-concept').value.trim(),amount=Math.max(0,Number($('finance-amount').value)||0);if(!concept||amount<=0){notify('Completá un concepto y un monto válido.','error');return}movements.push({type,concept,amount});e.target.reset();renderFinance();notify(type+' registrado.')});
+$('calculate-distribution').addEventListener('click',()=>{const total=Math.max(0,Number($('distribution-total').value)||0),active=members.filter(m=>m.active),byName={};hours.forEach(h=>byName[h.name]=(byName[h.name]||0)+h.hours);const totalHours=active.reduce((s,m)=>s+(byName[m.name]||0),0),box=$('distribution-results');box.innerHTML='';if(total<=0||totalHours<=0){notify('No hay monto u horas suficientes para calcular.','error');return}active.forEach(m=>{const h=byName[m.name]||0,share=total*(h/totalHours),card=document.createElement('div');card.className='card';card.innerHTML=`<strong>${esc(m.name)}</strong><div class="muted">${h} h registradas</div><div class="metric">${money(Math.round(share))}</div>`;box.appendChild(card)});notify('Simulación actualizada.')});
+$('fund-movement').addEventListener('click',()=>$('fund-note').classList.toggle('hidden'));document.querySelectorAll('.vote-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.vote-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');$('vote-result').textContent='Voto de prueba registrado: '+btn.dataset.vote+'.'}));$('save-minutes').addEventListener('click',()=>{const t=$('minutes-text').value.trim();notify(t?'Borrador de acta guardado.':'Escribí alguna decisión antes de guardar.',t?'ok':'error')});
+updateCapitalPreview();renderAll();renderHours();renderFinance();renderHoursValidation();
+})();
 </script>
 </body></html>
