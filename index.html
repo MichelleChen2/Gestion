@@ -271,6 +271,42 @@
   .hours-pagination{flex-wrap:wrap}
 }
 
+
+.pending-review-card{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:14px 16px;
+  margin-bottom:14px;
+  border:1px solid #fed7aa;
+  border-radius:12px;
+  background:#fffaf5;
+}
+.pending-review-copy{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+}
+.pending-review-icon{
+  width:40px;
+  height:40px;
+  flex:0 0 40px;
+  border-radius:11px;
+  display:grid;
+  place-items:center;
+  background:#ffedd5;
+  color:#c2410c;
+  font-weight:800;
+}
+.pending-review-copy strong{display:block;margin-bottom:2px}
+.pending-review-copy span{font-size:13px;color:var(--muted)}
+.pending-review-card.hidden{display:none!important}
+@media(max-width:620px){
+  .pending-review-card{align-items:flex-start;flex-direction:column}
+}
+
 </style>
 </head>
 <body>
@@ -337,6 +373,18 @@
   </div>
   <div id="role-summary" class="role-summary"></div>
 </section>
+
+<div id="pending-review-card" class="pending-review-card hidden">
+  <div class="pending-review-copy">
+    <div class="pending-review-icon">!</div>
+    <div>
+      <strong><span id="pending-review-count">0</span> pendiente(s) de verificación</strong>
+      <span>Revisá la constancia antes de habilitar al asociado.</span>
+    </div>
+  </div>
+  <button id="show-pending-members" class="secondary" type="button">Revisar pendientes</button>
+</div>
+
 <section class="member-list-panel">
   <div class="member-list-head">
     <div>
@@ -348,6 +396,7 @@
       <select id="member-status-filter">
         <option value="all">Todos</option>
         <option value="active">Activos</option>
+        <option value="pending">Pendientes de verificación</option>
         <option value="inactive">Bajas</option>
       </select>
     </div>
@@ -498,7 +547,7 @@ const titles={inicio:'Resumen general',socios:'Socios y aportes',trabajo:'Regist
 const defaultMembers=[
 {id:1,name:'Juan Pérez',dni:'30123456',cuit:'20-30123456-9',email:'juan@coop.test',date:'12/03/2024',capitalSubscribed:500000,capitalIntegrated:500000,monotributoFile:'constancia_juan.pdf',monotributoStatus:'Al día',roles:['Presidente'],active:true},
 {id:2,name:'María Ríos',dni:'33444555',cuit:'27-33444555-4',email:'maria@coop.test',date:'08/05/2024',capitalSubscribed:400000,capitalIntegrated:100000,monotributoFile:'constancia_maria.pdf',monotributoStatus:'Al día',roles:['Secretario'],active:true},
-{id:3,name:'Carlos López',dni:'28999111',cuit:'20-28999111-7',email:'carlos@coop.test',date:'21/06/2024',capitalSubscribed:370000,capitalIntegrated:50000,monotributoFile:'constancia_carlos.pdf',monotributoStatus:'Pendiente de revisión',roles:['Tesorero'],active:true},
+{id:3,name:'Carlos López',dni:'28999111',cuit:'20-28999111-7',email:'carlos@coop.test',date:'21/06/2024',capitalSubscribed:370000,capitalIntegrated:50000,monotributoFile:'constancia_carlos.pdf',monotributoStatus:'Verificado',roles:['Tesorero'],active:true},
 {id:4,name:'Ana Gómez',dni:'36777123',cuit:'27-36777123-2',email:'ana@coop.test',date:'04/02/2025',capitalSubscribed:370000,capitalIntegrated:370000,monotributoFile:'constancia_ana.pdf',monotributoStatus:'Al día',roles:[],active:true},
 {id:5,name:'Gonzalo Alispe',dni:'25444333',cuit:'20-25444333-8',email:'gonzalo@coop.test',date:'10/04/2024',capitalSubscribed:370000,capitalIntegrated:18500,monotributoFile:'constancia_gonzalo.pdf',monotributoStatus:'Al día',roles:[],active:false}
 ];
@@ -512,6 +561,19 @@ function normalizeMemberRoles(list){
     m.roles=[...new Set(m.roles.filter(r=>SPECIAL_ROLES.includes(r)))];
     if(m.monotributoStatus==='Pendiente de verificación')m.monotributoStatus='Pendiente de revisión';
     if(!m.monotributoStatus && m.monotributoFile)m.monotributoStatus='Pendiente de revisión';
+
+    // Migra altas pendientes creadas por versiones anteriores sin tocar autoridades existentes.
+    if(m.monotributoStatus==='Pendiente de revisión' && m.active && m.roles.length===0){
+      m.verificationPending=true;
+      m.active=false;
+    }
+    if(m.verificationPending===true){
+      m.active=false;
+      m.roles=[];
+    }else if(m.monotributoStatus==='Verificado'){
+      m.verificationPending=false;
+    }
+
     if(!m.active)m.roles=[];
   });
 
@@ -624,8 +686,46 @@ function resetMemberForm(){$('member-form').reset();$('member-capital').value='3
 $('show-member-form').addEventListener('click',()=>{$('member-form').classList.remove('hidden');$('member-name').focus();validateFormPreview()});$('cancel-member').addEventListener('click',()=>{$('member-form').classList.add('hidden');resetMemberForm()});
 let pendingReactivation=null;
 $('member-form').addEventListener('submit',e=>{e.preventDefault();const v=validationState();if(v.activeDuplicate){notify(`No se puede dar de alta: el CUIT ya pertenece a ${v.activeDuplicate.name}, socio activo.`,'error');return}if(v.inactiveDuplicate){pendingReactivation=v.inactiveDuplicate;$('reactivate-text').textContent=`El CUIT ingresado pertenece a ${v.inactiveDuplicate.name}, actualmente dado de baja. ¿Desea reincorporarlo en lugar de crear un registro duplicado?`;$('reactivate-dialog').showModal();return}if(!v.valid){notify('No se puede completar el alta. Revisá los campos obligatorios y los requisitos indicados.','error');validateFormPreview();return}createNewMember()});
-function createNewMember(){const cap=getCapital(),ini=getInitial(),file=$('member-monotributo').files[0],d=new Date(),date=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();members.push({id:Date.now(),name:$('member-name').value.trim(),dni:digits($('member-dni').value),cuit:formatCUIT($('member-cuit').value),email:$('member-email').value.trim(),date,capitalSubscribed:cap,capitalIntegrated:ini,monotributoFile:file.name,monotributoStatus:'Pendiente de revisión',roles:[],active:true});persistMembers();renderAll();$('member-form').classList.add('hidden');resetMemberForm();notify('Alta registrada. El socio quedó ACTIVO como Asociado.')}
-$('reactivate-confirm').addEventListener('click',()=>{if(!pendingReactivation)return;const v=validationState();if(!v.nameOk||!v.dniOk||!v.cuitOk||!v.emailOk||!v.capOk||!v.initialOk||!v.fileOk){$('reactivate-dialog').close();notify('Para reincorporar al socio deben completarse todos los campos obligatorios.','error');pendingReactivation=null;return}const file=$('member-monotributo').files[0];Object.assign(pendingReactivation,{name:$('member-name').value.trim(),dni:digits($('member-dni').value),email:$('member-email').value.trim(),capitalSubscribed:getCapital(),capitalIntegrated:getInitial(),monotributoFile:file.name,monotributoStatus:'Pendiente de revisión',roles:[],active:true});persistMembers();renderAll();$('reactivate-dialog').close();$('member-form').classList.add('hidden');resetMemberForm();notify('El ex-socio fue reincorporado como Asociado.');pendingReactivation=null});$('reactivate-cancel').addEventListener('click',()=>{$('reactivate-dialog').close();pendingReactivation=null});
+function createNewMember(){
+  const cap=getCapital(),ini=getInitial(),file=$('member-monotributo').files[0],
+    d=new Date(),date=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+
+  members.push({
+    id:Date.now(),
+    name:$('member-name').value.trim(),
+    dni:digits($('member-dni').value),
+    cuit:formatCUIT($('member-cuit').value),
+    email:$('member-email').value.trim(),
+    date,
+    capitalSubscribed:cap,
+    capitalIntegrated:ini,
+    monotributoFile:file.name,
+    monotributoStatus:'Pendiente de revisión',
+    verificationPending:true,
+    roles:[],
+    active:false
+  });
+
+  persistMembers();
+  memberPage=1;
+  renderAll();
+  $('member-form').classList.add('hidden');
+  resetMemberForm();
+  notify('Alta registrada. El asociado quedó pendiente de verificación.');
+}
+$('reactivate-confirm').addEventListener('click',()=>{if(!pendingReactivation)return;const v=validationState();if(!v.nameOk||!v.dniOk||!v.cuitOk||!v.emailOk||!v.capOk||!v.initialOk||!v.fileOk){$('reactivate-dialog').close();notify('Para reincorporar al socio deben completarse todos los campos obligatorios.','error');pendingReactivation=null;return}const file=$('member-monotributo').files[0];Object.assign(pendingReactivation,{name:$('member-name').value.trim(),dni:digits($('member-dni').value),email:$('member-email').value.trim(),capitalSubscribed:getCapital(),capitalIntegrated:getInitial(),monotributoFile:file.name,monotributoStatus:'Pendiente de revisión',verificationPending:true,roles:[],active:false});persistMembers();renderAll();$('reactivate-dialog').close();$('member-form').classList.add('hidden');resetMemberForm();notify('La reincorporación quedó pendiente de verificación.');pendingReactivation=null});$('reactivate-cancel').addEventListener('click',()=>{$('reactivate-dialog').close();pendingReactivation=null});
+function isPendingVerification(member){
+  return member?.verificationPending===true;
+}
+function memberStatusLabel(member){
+  if(isPendingVerification(member))return 'Pendiente de verificación';
+  return member.active?'Activo':'Baja';
+}
+function memberStatusBadge(member){
+  if(isPendingVerification(member))return '<span class="badge pending">Pendiente de verificación</span>';
+  return `<span class="badge ${member.active?'':'off'}">${member.active?'Activo':'Baja'}</span>`;
+}
+
 function memberSpecialRoles(member){
   return Array.isArray(member.roles)?member.roles.filter(r=>SPECIAL_ROLES.includes(r)):[];
 }
@@ -792,13 +892,16 @@ function filteredMembers(){
   const statusFilter=$('member-status-filter')?.value||'all';
 
   return members.filter(m=>{
+    const pending=isPendingVerification(m);
     const matchesStatus=
       statusFilter==='all' ||
-      (statusFilter==='active' && m.active) ||
-      (statusFilter==='inactive' && !m.active);
+      (statusFilter==='active' && m.active && !pending) ||
+      (statusFilter==='pending' && pending) ||
+      (statusFilter==='inactive' && !m.active && !pending);
 
     const haystack=[
       m.name,m.email,m.dni,m.cuit,
+      memberStatusLabel(m),
       ...displayRoles(m)
     ].join(' ').toLowerCase();
 
@@ -811,8 +914,10 @@ function showMemberDetail(id){
   if(!m)return;
 
   const pending=Math.max(0,(m.capitalSubscribed||0)-(m.capitalIntegrated||0));
+  const statusLabel=memberStatusLabel(m);
+
   $('member-detail-title').textContent=m.name;
-  $('member-detail-subtitle').textContent=`${displayRoles(m).join(' · ')} · ${m.active?'Activo':'Baja'}`;
+  $('member-detail-subtitle').textContent=`${displayRoles(m).join(' · ')} · ${statusLabel}`;
 
   const detailItems=[
     ['DNI',m.dni||'—'],
@@ -820,7 +925,7 @@ function showMemberDetail(id){
     ['Correo electrónico',m.email||'—'],
     ['Fecha de alta',m.date||'—'],
     ['Rol / cargos',displayRoles(m).join(', ')],
-    ['Estado',m.active?'Activo':'Baja'],
+    ['Estado',statusLabel],
     ['Capital suscripto',money(m.capitalSubscribed||0)],
     ['Capital integrado',money(m.capitalIntegrated||0)],
     ['Saldo pendiente',money(pending)],
@@ -835,20 +940,19 @@ function showMemberDetail(id){
   const actions=$('member-detail-actions');
   actions.innerHTML='';
 
-  if(m.monotributoFile){
-    const isVerified=m.monotributoStatus==='Verificado';
+  if(isPendingVerification(m) && m.monotributoFile){
     const button=document.createElement('button');
     button.type='button';
-    button.className=isVerified?'secondary':'primary';
-    button.textContent=isVerified?'Volver a pendiente':'Verificar constancia';
+    button.className='primary';
+    button.textContent='Aprobar y habilitar asociado';
     button.addEventListener('click',()=>{
-      m.monotributoStatus=isVerified?'Pendiente de revisión':'Verificado';
+      m.monotributoStatus='Verificado';
+      m.verificationPending=false;
+      m.active=true;
       persistMembers();
       renderAll();
       showMemberDetail(m.id);
-      notify(isVerified
-        ? 'La constancia volvió a quedar pendiente de revisión.'
-        : 'Constancia de monotributo verificada.');
+      notify('Constancia verificada. El asociado quedó activo.');
     });
     actions.appendChild(button);
   }
@@ -859,6 +963,12 @@ function showMemberDetail(id){
 function toggleMemberState(id){
   const m=members.find(x=>String(x.id)===String(id));
   if(!m)return;
+
+  if(isPendingVerification(m)){
+    notify('Este asociado está pendiente de verificación. Revisá su constancia antes de habilitarlo.','error');
+    showMemberDetail(m.id);
+    return;
+  }
 
   if(m.active){
     const held=authorityRolesOf(m);
@@ -888,6 +998,10 @@ function renderMembers(){
   const list=$('members-list');
   if(!list)return;
 
+  const pendingCount=members.filter(isPendingVerification).length;
+  $('pending-review-count').textContent=pendingCount;
+  $('pending-review-card').classList.toggle('hidden',pendingCount===0);
+
   const filtered=filteredMembers();
   const totalPages=Math.max(1,Math.ceil(filtered.length/MEMBERS_PER_PAGE));
   if(memberPage>totalPages)memberPage=totalPages;
@@ -908,17 +1022,21 @@ function renderMembers(){
       <div class="member-info">
         <div class="member-name-line">
           <span class="member-name">${esc(m.name)}</span>
-          <span class="badge ${m.active?'':'off'}">${m.active?'Activo':'Baja'}</span>
+          ${memberStatusBadge(m)}
         </div>
         <div class="member-subline">${esc(m.email||'Sin correo')} · CUIT ${esc(m.cuit||'—')}</div>
         <div class="member-role-line">${roleBadges(m)}</div>
         ${m.active&&heldRoles.length?`<div class="helper" style="margin-top:6px">Ocupa ${esc(heldRoles.join(', '))}</div>`:''}
       </div>
       <div class="member-actions">
-        <button type="button" class="secondary" data-view-member="${m.id}">Ver detalle</button>
-        <button type="button" class="${m.active?'danger-btn':'secondary'}" data-toggle-member-id="${m.id}">
-          ${m.active?'Registrar baja':'Reactivar'}
+        <button type="button" class="${isPendingVerification(m)?'primary':'secondary'}" data-view-member="${m.id}">
+          ${isPendingVerification(m)?'Revisar':'Ver detalle'}
         </button>
+        ${isPendingVerification(m)?'':`
+          <button type="button" class="${m.active?'danger-btn':'secondary'}" data-toggle-member-id="${m.id}">
+            ${m.active?'Registrar baja':'Reactivar'}
+          </button>
+        `}
       </div>
     `;
     list.appendChild(card);
@@ -945,6 +1063,14 @@ function renderMembers(){
 
   renderRoleSummary();
 }
+
+$('show-pending-members').addEventListener('click',()=>{
+  $('member-status-filter').value='pending';
+  $('member-search').value='';
+  memberPage=1;
+  renderMembers();
+  $('members-list').scrollIntoView({behavior:'smooth',block:'start'});
+});
 
 $('member-search').addEventListener('input',()=>{
   memberPage=1;
