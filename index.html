@@ -132,6 +132,145 @@
   .member-actions{padding-left:0}
 }
 
+
+/* Historial de trabajo */
+.hours-history-panel{
+  min-width:0;
+}
+.hours-history-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:14px;
+  margin-bottom:12px;
+}
+.hours-history-head h3{margin-bottom:4px}
+.hours-history-stats{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.hours-stat{
+  border:1px solid var(--border);
+  background:var(--soft);
+  border-radius:10px;
+  padding:8px 10px;
+  min-width:92px;
+}
+.hours-stat span{
+  display:block;
+  font-size:11px;
+  color:var(--muted);
+}
+.hours-stat strong{
+  display:block;
+  font-size:15px;
+  margin-top:2px;
+}
+.hours-history-toolbar{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 170px;
+  gap:8px;
+  margin-bottom:12px;
+}
+.hours-history-toolbar input,
+.hours-history-toolbar select{margin:0}
+.hours-history-list{
+  display:grid;
+  gap:9px;
+}
+.hour-entry{
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+  padding:13px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#fff;
+}
+.hour-entry:hover{
+  border-color:#c7d2fe;
+  box-shadow:0 3px 12px rgba(17,24,39,.04);
+}
+.hour-avatar{
+  width:44px;
+  height:44px;
+  border-radius:12px;
+  display:grid;
+  place-items:center;
+  background:var(--accent-soft);
+  color:#4338ca;
+  font-weight:800;
+}
+.hour-entry-main{min-width:0}
+.hour-entry-top{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.hour-entry-name{font-weight:800}
+.hour-entry-hours{
+  display:inline-flex;
+  align-items:center;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#ecfdf3;
+  color:#067647;
+  font-size:12px;
+  font-weight:800;
+}
+.hour-entry-meta{
+  margin-top:3px;
+  font-size:13px;
+  color:var(--muted);
+}
+.hour-entry-note{
+  margin-top:6px;
+  font-size:13px;
+  color:#374151;
+  overflow-wrap:anywhere;
+}
+.hour-entry-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+}
+.hours-empty{
+  display:none;
+  padding:24px 14px;
+  border:1px dashed var(--border);
+  border-radius:12px;
+  text-align:center;
+  color:var(--muted);
+  background:var(--soft);
+}
+.hours-pagination{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:12px;
+}
+.hours-page-info{
+  color:var(--muted);
+  font-size:12px;
+  text-align:center;
+}
+@media(max-width:700px){
+  .hours-history-head{flex-direction:column}
+  .hours-history-stats{justify-content:flex-start}
+  .hours-history-toolbar{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+  .hour-entry{grid-template-columns:1fr}
+  .hour-avatar{display:none}
+  .hour-entry-actions{justify-content:flex-start}
+  .hours-pagination{flex-wrap:wrap}
+}
+
 </style>
 </head>
 <body>
@@ -177,8 +316,13 @@
   <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
   <h3>Monotributo</h3>
   <div class="form-grid">
-    <label>Constancia de monotributo (PDF) *<input id="member-monotributo" type="file" accept="application/pdf,.pdf"><div class="helper">Se admite un archivo en formato PDF.</div></label>
-    <label>Estado del monotributo<select id="member-monotributo-status"><option value="Al día">Al día</option><option value="Pendiente de verificación">Pendiente de verificación</option></select></label>
+    <label>Constancia de monotributo (PDF) *
+      <input id="member-monotributo" type="file" accept="application/pdf,.pdf">
+      <div class="helper">Adjuntá una constancia en PDF. La revisión se realiza después del alta.</div>
+    </label>
+    <div class="role-note" style="margin-top:5px">
+      <strong>Estado inicial:</strong> la constancia quedará como <strong>Pendiente de revisión</strong> hasta que un administrador la verifique.
+    </div>
   </div>
   <div class="validation"><strong>Requisitos para completar el alta</strong><ul id="member-validation-list"></ul></div>
   <div class="form-actions"><button class="primary" type="submit">Registrar alta</button></div>
@@ -220,7 +364,76 @@
 </section>
 <div class="auto-save-note">Los cambios se guardan automáticamente. Podés importar o exportar una copia de los datos cuando lo necesites.</div>
 </section>
-<section class="panel" data-panel="trabajo"><div class="work-layout"><form id="hours-form" class="form-card" novalidate><h3>Carga de trabajo</h3><p class="muted">Registrar el trabajo de un socio en el período.</p><label>Socio<select id="hours-member"></select><div class="helper">Solo se pueden cargar horas a socios activos.</div></label><label>Fecha<input id="hours-date" type="date" value="2026-09-08"></label><label>Horas trabajadas<input id="hours-value" type="number" min="0.5" max="24" step="0.5" value="4"><div class="helper">Número positivo, mayor a 0 y menor a 24.</div></label><label>Descripción<textarea id="hours-note" rows="2" maxlength="100" placeholder="Ej. clasificación, administración..."></textarea></label><div class="validation"><strong>Antes de registrar</strong><ul id="hours-validation-list"></ul></div><div class="form-actions"><button class="primary" type="submit">Registrar</button></div></form><div><h3>Historial del período</h3><div class="table-wrap"><table><thead><tr><th>Socio</th><th>Fecha</th><th>Horas</th><th>Detalle</th><th>Acciones</th></tr></thead><tbody id="hours-body"></tbody></table></div></div></div></section>
+<section class="panel" data-panel="trabajo">
+  <div class="work-layout">
+    <form id="hours-form" class="form-card" novalidate>
+      <h3>Carga de trabajo</h3>
+      <p class="muted">Registrar el trabajo de un socio en el período.</p>
+
+      <label>Socio
+        <select id="hours-member"></select>
+        <div class="helper">Solo se pueden cargar horas a socios activos.</div>
+      </label>
+
+      <label>Fecha
+        <input id="hours-date" type="date" value="2026-09-08">
+      </label>
+
+      <label>Horas trabajadas
+        <input id="hours-value" type="number" min="0.5" max="23.5" step="0.5" value="4">
+        <div class="helper">Por día debe ser mayor a 0 y menor a 24 horas.</div>
+      </label>
+
+      <label>Descripción
+        <textarea id="hours-note" rows="2" maxlength="100" placeholder="Ej. clasificación, administración..."></textarea>
+      </label>
+
+      <div class="validation">
+        <strong>Antes de registrar</strong>
+        <ul id="hours-validation-list"></ul>
+      </div>
+
+      <div class="form-actions">
+        <button class="primary" type="submit">Registrar</button>
+      </div>
+    </form>
+
+    <section class="hours-history-panel">
+      <div class="hours-history-head">
+        <div>
+          <h3>Historial del período</h3>
+          <p class="muted">Consultá las horas registradas sin desplazarte por una tabla.</p>
+        </div>
+        <div class="hours-history-stats">
+          <div class="hours-stat">
+            <span>Registros</span>
+            <strong id="hours-history-count">0</strong>
+          </div>
+          <div class="hours-stat">
+            <span>Horas</span>
+            <strong id="hours-history-total">0 h</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="hours-history-toolbar">
+        <input id="hours-history-search" type="search" placeholder="Buscar socio o detalle">
+        <select id="hours-history-member-filter">
+          <option value="all">Todos los socios</option>
+        </select>
+      </div>
+
+      <div id="hours-history-list" class="hours-history-list"></div>
+      <div id="hours-history-empty" class="hours-empty">No hay registros que coincidan con la búsqueda.</div>
+
+      <div class="hours-pagination">
+        <button id="hours-prev" class="secondary" type="button">← Anterior</button>
+        <div id="hours-page-info" class="hours-page-info"></div>
+        <button id="hours-next" class="secondary" type="button">Siguiente →</button>
+      </div>
+    </section>
+  </div>
+</section>
 <section class="panel" data-panel="finanzas"><div class="grid3"><div class="card"><div class="metric-label">Ingresos</div><div id="income-total" class="metric">$0</div></div><div class="card"><div class="metric-label">Gastos</div><div id="expense-total" class="metric">$0</div></div><div class="card"><div class="metric-label">Saldo</div><div id="finance-balance" class="metric">$0</div></div></div><form id="finance-form" class="form-card" style="margin-top:14px"><div class="form-grid"><label>Tipo<select id="finance-type"><option>Ingreso</option><option>Gasto</option></select></label><label>Concepto<input id="finance-concept" maxlength="50" placeholder="Ej. venta" required></label><label>Monto ($)<input id="finance-amount" type="number" min="1" step="100" required></label></div><div class="form-actions"><button class="primary">Registrar</button></div></form><div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Concepto</th><th>Monto</th></tr></thead><tbody id="finance-body"></tbody></table></div></section>
 <section class="panel" data-panel="retiros"><div class="card"><h3>Anticipos de retiro y excedentes</h3><p class="muted">Consultá y calculá los anticipos y excedentes correspondientes al período.</p><div class="form-grid"><label>Monto disponible para simular ($)<input id="distribution-total" type="number" min="0" step="1000" value="300000"></label></div><div class="form-actions"><button id="calculate-distribution" type="button" class="primary">Calcular distribución</button></div><p class="muted" style="margin-top:12px">La estimación se calcula en función de las horas registradas en el período.</p></div><div id="distribution-results" class="grid2" style="margin-top:12px"></div></section>
 <section class="panel" data-panel="fondos"><div class="section-head"><div><h3>Fondos de la cooperativa</h3><p class="muted">Seguimiento de fondos que deben mantenerse o reservarse.</p></div></div><div class="fund-grid"><div class="card"><div class="metric-label">Fondo de reserva</div><div class="metric">$180.000</div><div class="muted">Último movimiento: +$20.000</div></div><div class="card"><div class="metric-label">Fondo operativo</div><div class="metric">$95.000</div><div class="muted">Disponible para operación</div></div><div class="card"><div class="metric-label">Total reservado</div><div class="metric">$275.000</div><div class="muted">Actualizado en el período</div></div></div><div class="form-actions"><button id="fund-movement" class="primary" type="button">Registrar movimiento de fondo</button></div><div id="fund-note" class="card soft hidden" style="margin-top:12px">En una versión posterior, esta acción podría pedir fondo, tipo de movimiento, monto, fecha y motivo.</div></section>
@@ -272,6 +485,7 @@
       <button id="member-detail-close" class="secondary" type="button">Cerrar</button>
     </div>
     <div id="member-detail-content" class="detail-grid"></div>
+    <div id="member-detail-actions" class="form-actions" style="margin-top:16px"></div>
   </div>
 </dialog>
 
@@ -284,7 +498,7 @@ const titles={inicio:'Resumen general',socios:'Socios y aportes',trabajo:'Regist
 const defaultMembers=[
 {id:1,name:'Juan Pérez',dni:'30123456',cuit:'20-30123456-9',email:'juan@coop.test',date:'12/03/2024',capitalSubscribed:500000,capitalIntegrated:500000,monotributoFile:'constancia_juan.pdf',monotributoStatus:'Al día',roles:['Presidente'],active:true},
 {id:2,name:'María Ríos',dni:'33444555',cuit:'27-33444555-4',email:'maria@coop.test',date:'08/05/2024',capitalSubscribed:400000,capitalIntegrated:100000,monotributoFile:'constancia_maria.pdf',monotributoStatus:'Al día',roles:['Secretario'],active:true},
-{id:3,name:'Carlos López',dni:'28999111',cuit:'20-28999111-7',email:'carlos@coop.test',date:'21/06/2024',capitalSubscribed:370000,capitalIntegrated:50000,monotributoFile:'constancia_carlos.pdf',monotributoStatus:'Pendiente de verificación',roles:['Tesorero'],active:true},
+{id:3,name:'Carlos López',dni:'28999111',cuit:'20-28999111-7',email:'carlos@coop.test',date:'21/06/2024',capitalSubscribed:370000,capitalIntegrated:50000,monotributoFile:'constancia_carlos.pdf',monotributoStatus:'Pendiente de revisión',roles:['Tesorero'],active:true},
 {id:4,name:'Ana Gómez',dni:'36777123',cuit:'27-36777123-2',email:'ana@coop.test',date:'04/02/2025',capitalSubscribed:370000,capitalIntegrated:370000,monotributoFile:'constancia_ana.pdf',monotributoStatus:'Al día',roles:[],active:true},
 {id:5,name:'Gonzalo Alispe',dni:'25444333',cuit:'20-25444333-8',email:'gonzalo@coop.test',date:'10/04/2024',capitalSubscribed:370000,capitalIntegrated:18500,monotributoFile:'constancia_gonzalo.pdf',monotributoStatus:'Al día',roles:[],active:false}
 ];
@@ -296,6 +510,8 @@ function normalizeMemberRoles(list){
       delete m.role;
     }
     m.roles=[...new Set(m.roles.filter(r=>SPECIAL_ROLES.includes(r)))];
+    if(m.monotributoStatus==='Pendiente de verificación')m.monotributoStatus='Pendiente de revisión';
+    if(!m.monotributoStatus && m.monotributoFile)m.monotributoStatus='Pendiente de revisión';
     if(!m.active)m.roles=[];
   });
 
@@ -358,9 +574,35 @@ function loadMembers(){
 }
 let members=loadMembers();
 const HOURS_KEY='coopgestion_horas_v1';
-const defaultHours=[{name:'Juan Pérez',date:'05/09/2026',hours:30,note:'Administración'},{name:'María Ríos',date:'05/09/2026',hours:26,note:'Producción'},{name:'Carlos López',date:'06/09/2026',hours:24,note:'Logística'},{name:'Ana Gómez',date:'06/09/2026',hours:22,note:'Producción'}];
+const defaultHours=[
+{name:'Juan Pérez',date:'05/09/2026',hours:8,note:'Administración'},
+{name:'María Ríos',date:'05/09/2026',hours:7.5,note:'Producción'},
+{name:'Carlos López',date:'06/09/2026',hours:8,note:'Logística'},
+{name:'Ana Gómez',date:'06/09/2026',hours:6,note:'Producción'}
+];
 function ensureHourIds(list){list.forEach((h,i)=>{if(h.id==null)h.id=Date.now()+i});return list}
-function loadHours(){let list;try{const raw=localStorage.getItem(HOURS_KEY);list=raw?JSON.parse(raw):null;if(!Array.isArray(list))list=null}catch(e){list=null}if(!list)list=JSON.parse(JSON.stringify(defaultHours));ensureHourIds(list);localStorage.setItem(HOURS_KEY,JSON.stringify(list));return list}
+function loadHours(){
+let list;
+try{
+  const raw=localStorage.getItem(HOURS_KEY);
+  list=raw?JSON.parse(raw):null;
+  if(!Array.isArray(list))list=null;
+}catch(e){list=null}
+
+if(!list){
+  list=JSON.parse(JSON.stringify(defaultHours));
+}else{
+  list=list.filter(h=>{
+    const value=Number(h.hours);
+    return Number.isFinite(value)&&value>0&&value<24;
+  });
+  if(!list.length)list=JSON.parse(JSON.stringify(defaultHours));
+}
+
+ensureHourIds(list);
+localStorage.setItem(HOURS_KEY,JSON.stringify(list));
+return list;
+}
 let hours=loadHours();
 function persistHours(){localStorage.setItem(HOURS_KEY,JSON.stringify(hours))}
 const movements=[{type:'Ingreso',concept:'Venta mensual',amount:850000},{type:'Gasto',concept:'Insumos',amount:270000},{type:'Gasto',concept:'Servicios',amount:160000}];
@@ -378,12 +620,12 @@ function validationState(){const name=$('member-name').value.trim(),dni=digits($
 function validateFormPreview(){const v=validationState(),items=[[v.nameOk,'Nombre y apellido completos'],[v.dniOk,'DNI informado'],[v.cuitOk,'CUIT con 11 dígitos'],[v.emailOk,'Correo electrónico válido'],[v.capOk,'Capital social suscripto mayor a $0'],[v.initialOk,'Aporte inicial entre el 5% mínimo y el 100% del capital'],[v.fileOk,'Constancia de monotributo en PDF'],[!v.activeDuplicate,'CUIT no duplicado entre socios activos']];$('member-validation-list').innerHTML=items.map(([ok,t])=>`<li class="${ok?'good':'bad'}">${ok?'✓':'✕'} ${t}</li>`).join('')}
 function updateCapitalPreview(){const cap=getCapital(),ini=getInitial(),min=cap*.05;$('minimum-contribution').textContent=money(Math.round(min));$('integrated-preview').textContent=money(ini);$('pending-preview').textContent=money(Math.max(0,cap-ini));validateFormPreview()}
 $('member-cuit').addEventListener('input',e=>{e.target.value=formatCUIT(e.target.value);validateFormPreview()});['member-dni','member-name','member-email'].forEach(id=>$(id).addEventListener('input',validateFormPreview));['member-capital','member-initial-contribution'].forEach(id=>$(id).addEventListener('input',updateCapitalPreview));$('member-monotributo').addEventListener('change',validateFormPreview);
-function resetMemberForm(){$('member-form').reset();$('member-capital').value='370000';$('member-initial-contribution').value='18500';$('member-monotributo-status').value='Al día';updateCapitalPreview()}
+function resetMemberForm(){$('member-form').reset();$('member-capital').value='370000';$('member-initial-contribution').value='18500';updateCapitalPreview()}
 $('show-member-form').addEventListener('click',()=>{$('member-form').classList.remove('hidden');$('member-name').focus();validateFormPreview()});$('cancel-member').addEventListener('click',()=>{$('member-form').classList.add('hidden');resetMemberForm()});
 let pendingReactivation=null;
 $('member-form').addEventListener('submit',e=>{e.preventDefault();const v=validationState();if(v.activeDuplicate){notify(`No se puede dar de alta: el CUIT ya pertenece a ${v.activeDuplicate.name}, socio activo.`,'error');return}if(v.inactiveDuplicate){pendingReactivation=v.inactiveDuplicate;$('reactivate-text').textContent=`El CUIT ingresado pertenece a ${v.inactiveDuplicate.name}, actualmente dado de baja. ¿Desea reincorporarlo en lugar de crear un registro duplicado?`;$('reactivate-dialog').showModal();return}if(!v.valid){notify('No se puede completar el alta. Revisá los campos obligatorios y los requisitos indicados.','error');validateFormPreview();return}createNewMember()});
-function createNewMember(){const cap=getCapital(),ini=getInitial(),file=$('member-monotributo').files[0],d=new Date(),date=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();members.push({id:Date.now(),name:$('member-name').value.trim(),dni:digits($('member-dni').value),cuit:formatCUIT($('member-cuit').value),email:$('member-email').value.trim(),date,capitalSubscribed:cap,capitalIntegrated:ini,monotributoFile:file.name,monotributoStatus:$('member-monotributo-status').value,roles:[],active:true});persistMembers();renderAll();$('member-form').classList.add('hidden');resetMemberForm();notify('Alta registrada. El socio quedó ACTIVO como Asociado.')}
-$('reactivate-confirm').addEventListener('click',()=>{if(!pendingReactivation)return;const v=validationState();if(!v.nameOk||!v.dniOk||!v.cuitOk||!v.emailOk||!v.capOk||!v.initialOk||!v.fileOk){$('reactivate-dialog').close();notify('Para reincorporar al socio deben completarse todos los campos obligatorios.','error');pendingReactivation=null;return}const file=$('member-monotributo').files[0];Object.assign(pendingReactivation,{name:$('member-name').value.trim(),dni:digits($('member-dni').value),email:$('member-email').value.trim(),capitalSubscribed:getCapital(),capitalIntegrated:getInitial(),monotributoFile:file.name,monotributoStatus:$('member-monotributo-status').value,roles:[],active:true});persistMembers();renderAll();$('reactivate-dialog').close();$('member-form').classList.add('hidden');resetMemberForm();notify('El ex-socio fue reincorporado como Asociado.');pendingReactivation=null});$('reactivate-cancel').addEventListener('click',()=>{$('reactivate-dialog').close();pendingReactivation=null});
+function createNewMember(){const cap=getCapital(),ini=getInitial(),file=$('member-monotributo').files[0],d=new Date(),date=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();members.push({id:Date.now(),name:$('member-name').value.trim(),dni:digits($('member-dni').value),cuit:formatCUIT($('member-cuit').value),email:$('member-email').value.trim(),date,capitalSubscribed:cap,capitalIntegrated:ini,monotributoFile:file.name,monotributoStatus:'Pendiente de revisión',roles:[],active:true});persistMembers();renderAll();$('member-form').classList.add('hidden');resetMemberForm();notify('Alta registrada. El socio quedó ACTIVO como Asociado.')}
+$('reactivate-confirm').addEventListener('click',()=>{if(!pendingReactivation)return;const v=validationState();if(!v.nameOk||!v.dniOk||!v.cuitOk||!v.emailOk||!v.capOk||!v.initialOk||!v.fileOk){$('reactivate-dialog').close();notify('Para reincorporar al socio deben completarse todos los campos obligatorios.','error');pendingReactivation=null;return}const file=$('member-monotributo').files[0];Object.assign(pendingReactivation,{name:$('member-name').value.trim(),dni:digits($('member-dni').value),email:$('member-email').value.trim(),capitalSubscribed:getCapital(),capitalIntegrated:getInitial(),monotributoFile:file.name,monotributoStatus:'Pendiente de revisión',roles:[],active:true});persistMembers();renderAll();$('reactivate-dialog').close();$('member-form').classList.add('hidden');resetMemberForm();notify('El ex-socio fue reincorporado como Asociado.');pendingReactivation=null});$('reactivate-cancel').addEventListener('click',()=>{$('reactivate-dialog').close();pendingReactivation=null});
 function memberSpecialRoles(member){
   return Array.isArray(member.roles)?member.roles.filter(r=>SPECIAL_ROLES.includes(r)):[];
 }
@@ -582,13 +824,34 @@ function showMemberDetail(id){
     ['Capital suscripto',money(m.capitalSubscribed||0)],
     ['Capital integrado',money(m.capitalIntegrated||0)],
     ['Saldo pendiente',money(pending)],
-    ['Monotributo',m.monotributoStatus||'Sin información'],
+    ['Monotributo',m.monotributoStatus||'Pendiente de revisión'],
     ['Constancia',m.monotributoFile||'No cargada']
   ];
 
   $('member-detail-content').innerHTML=detailItems.map(([label,value])=>
     `<div class="detail-item"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`
   ).join('');
+
+  const actions=$('member-detail-actions');
+  actions.innerHTML='';
+
+  if(m.monotributoFile){
+    const isVerified=m.monotributoStatus==='Verificado';
+    const button=document.createElement('button');
+    button.type='button';
+    button.className=isVerified?'secondary':'primary';
+    button.textContent=isVerified?'Volver a pendiente':'Verificar constancia';
+    button.addEventListener('click',()=>{
+      m.monotributoStatus=isVerified?'Pendiente de revisión':'Verificado';
+      persistMembers();
+      renderAll();
+      showMemberDetail(m.id);
+      notify(isVerified
+        ? 'La constancia volvió a quedar pendiente de revisión.'
+        : 'Constancia de monotributo verificada.');
+    });
+    actions.appendChild(button);
+  }
 
   $('member-detail-dialog').showModal();
 }
@@ -755,10 +1018,146 @@ $('import-members').addEventListener('change',async e=>{
     e.target.value='';
   }
 });
-function renderHours(){const body=$('hours-body');body.innerHTML='';hours.slice().reverse().forEach(h=>{const tr=document.createElement('tr');tr.innerHTML=`<td><strong>${esc(h.name)}</strong></td><td>${h.date}</td><td>${h.hours} h</td><td>${esc(h.note||'—')}</td><td><button type="button" class="danger-btn" data-delete-hour="${h.id}" title="Eliminar registro" aria-label="Eliminar registro">🗑️</button></td>`;body.appendChild(tr)});body.querySelectorAll('[data-delete-hour]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteHour,h=hours.find(x=>String(x.id)===String(id));if(!h)return;if(!confirm(`¿Eliminar la carga de ${h.name} del ${h.date} (${h.hours} h)? Esta acción no se puede deshacer.`))return;hours=hours.filter(x=>String(x.id)!==String(id));persistHours();renderHours();updateMetrics();renderHoursValidation();notify('Registro de horas eliminado.')}))}
+let hoursHistoryPage=1;
+const HOURS_PER_PAGE=5;
+
+function hourInitials(name){
+  return String(name||'')
+    .trim()
+    .split(/\s+/)
+    .slice(0,2)
+    .map(x=>x[0]||'')
+    .join('')
+    .toUpperCase() || 'S';
+}
+
+function refreshHoursMemberFilter(){
+  const select=$('hours-history-member-filter');
+  if(!select)return;
+
+  const previous=select.value||'all';
+  const names=[...new Set(hours.map(h=>h.name))].sort((a,b)=>a.localeCompare(b,'es'));
+
+  select.innerHTML='<option value="all">Todos los socios</option>';
+  names.forEach(name=>{
+    const option=document.createElement('option');
+    option.value=name;
+    option.textContent=name;
+    select.appendChild(option);
+  });
+
+  if(previous==='all'||names.includes(previous))select.value=previous;
+}
+
+function filteredHourEntries(){
+  const query=($('hours-history-search')?.value||'').trim().toLowerCase();
+  const memberFilter=$('hours-history-member-filter')?.value||'all';
+
+  return hours
+    .filter(h=>{
+      const matchesMember=memberFilter==='all'||h.name===memberFilter;
+      const haystack=`${h.name} ${h.note||''} ${h.date}`.toLowerCase();
+      return matchesMember&&(!query||haystack.includes(query));
+    })
+    .slice()
+    .reverse();
+}
+
+function renderHours(){
+  const list=$('hours-history-list');
+  if(!list)return;
+
+  refreshHoursMemberFilter();
+
+  const filtered=filteredHourEntries();
+  const totalPages=Math.max(1,Math.ceil(filtered.length/HOURS_PER_PAGE));
+  hoursHistoryPage=Math.min(Math.max(hoursHistoryPage,1),totalPages);
+
+  const startIndex=(hoursHistoryPage-1)*HOURS_PER_PAGE;
+  const pageItems=filtered.slice(startIndex,startIndex+HOURS_PER_PAGE);
+
+  list.innerHTML='';
+
+  pageItems.forEach(h=>{
+    const card=document.createElement('article');
+    card.className='hour-entry';
+    card.innerHTML=`
+      <div class="hour-avatar">${hourInitials(h.name)}</div>
+      <div class="hour-entry-main">
+        <div class="hour-entry-top">
+          <span class="hour-entry-name">${esc(h.name)}</span>
+          <span class="hour-entry-hours">${Number(h.hours).toLocaleString('es-AR')} h</span>
+        </div>
+        <div class="hour-entry-meta">${esc(h.date)}</div>
+        <div class="hour-entry-note">${esc(h.note||'Sin detalle')}</div>
+      </div>
+      <div class="hour-entry-actions">
+        <button type="button" class="danger-btn" data-delete-hour="${h.id}" title="Eliminar registro" aria-label="Eliminar registro">
+          Eliminar
+        </button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+
+  const totalHours=filtered.reduce((sum,h)=>sum+Number(h.hours||0),0);
+  $('hours-history-count').textContent=filtered.length;
+  $('hours-history-total').textContent=totalHours.toLocaleString('es-AR')+' h';
+  $('hours-history-empty').style.display=filtered.length?'none':'block';
+
+  const from=filtered.length?startIndex+1:0;
+  const to=Math.min(startIndex+HOURS_PER_PAGE,filtered.length);
+  $('hours-page-info').textContent=filtered.length
+    ? `Mostrando ${from}–${to} de ${filtered.length} · Página ${hoursHistoryPage} de ${totalPages}`
+    : '0 registros';
+
+  $('hours-prev').disabled=hoursHistoryPage<=1;
+  $('hours-next').disabled=hoursHistoryPage>=totalPages;
+
+  list.querySelectorAll('[data-delete-hour]').forEach(btn=>btn.addEventListener('click',()=>{
+    const id=btn.dataset.deleteHour;
+    const h=hours.find(x=>String(x.id)===String(id));
+    if(!h)return;
+
+    if(!confirm(`¿Eliminar la carga de ${h.name} del ${h.date} (${h.hours} h)? Esta acción no se puede deshacer.`))return;
+
+    hours=hours.filter(x=>String(x.id)!==String(id));
+    persistHours();
+    renderHours();
+    updateMetrics();
+    renderHoursValidation();
+    notify('Registro de horas eliminado.');
+  }));
+}
+
+$('hours-history-search').addEventListener('input',()=>{
+  hoursHistoryPage=1;
+  renderHours();
+});
+
+$('hours-history-member-filter').addEventListener('change',()=>{
+  hoursHistoryPage=1;
+  renderHours();
+});
+
+$('hours-prev').addEventListener('click',()=>{
+  if(hoursHistoryPage>1){
+    hoursHistoryPage--;
+    renderHours();
+  }
+});
+
+$('hours-next').addEventListener('click',()=>{
+  const totalPages=Math.max(1,Math.ceil(filteredHourEntries().length/HOURS_PER_PAGE));
+  if(hoursHistoryPage<totalPages){
+    hoursHistoryPage++;
+    renderHours();
+  }
+});
+
 function formatHoursDate(raw){if(!raw)return'';const [y,m,d]=raw.split('-');return `${d}/${m}/${y}`}
 function hoursValidationState(){const name=$('hours-member').value,member=members.find(m=>m.name===name),memberOk=!!member&&member.active,rawHours=$('hours-value').value,val=Number(rawHours),hoursOk=rawHours!==''&&Number.isFinite(val)&&val>0&&val<24,date=formatHoursDate($('hours-date').value),duplicate=!!(name&&date&&hours.some(h=>h.name===name&&h.date===date));return{member,memberOk,val,hoursOk,date,duplicate,noDuplicateOk:!duplicate,valid:memberOk&&hoursOk&&!duplicate}}
-function renderHoursValidation(){const v=hoursValidationState(),items=[[v.memberOk,'El socio seleccionado está activo'],[v.hoursOk,'Cantidad de horas positiva y menor a 24'],[v.noDuplicateOk,'No hay una carga previa para ese socio en esa fecha']];$('hours-validation-list').innerHTML=items.map(([ok,t])=>`<li class="${ok?'good':'bad'}">${ok?'✓':'✕'} ${t}</li>`).join('')}
+function renderHoursValidation(){const v=hoursValidationState(),items=[[v.memberOk,'El socio seleccionado está activo'],[v.hoursOk,'Cantidad de horas mayor a 0 y menor a 24 por día'],[v.noDuplicateOk,'No hay una carga previa para ese socio en esa fecha']];$('hours-validation-list').innerHTML=items.map(([ok,t])=>`<li class="${ok?'good':'bad'}">${ok?'✓':'✕'} ${t}</li>`).join('')}
 ['hours-value','hours-date'].forEach(id=>$(id).addEventListener('input',renderHoursValidation));
 $('hours-member').addEventListener('change',renderHoursValidation);
 $('hours-form').addEventListener('submit',e=>{e.preventDefault();const name=$('hours-member').value,rawDate=$('hours-date').value,note=$('hours-note').value.trim();if(!name||!rawDate){notify('Completá socio y fecha.','error');return}const v=hoursValidationState();if(!v.memberOk){notify('No se pueden cargar horas a un usuario inactivo.','error');renderHoursValidation();return}if(!v.hoursOk){notify('La cantidad de horas ingresada es inválida. Debe ser un número positivo mayor a 0 y menor a 24.','error');renderHoursValidation();return}if(v.duplicate){notify('Ya se cargaron horas para ese socio en esa fecha. Corroborá la carga existente antes de continuar.','error');renderHoursValidation();return}hours.push({id:Date.now(),name,date:v.date,hours:v.val,note});persistHours();$('hours-note').value='';renderHours();updateMetrics();renderHoursValidation();notify('Trabajo registrado y guardado en el historial.')});
