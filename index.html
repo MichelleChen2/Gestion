@@ -307,11 +307,304 @@
   .pending-review-card{align-items:flex-start;flex-direction:column}
 }
 
+
+/* Liquidación de retribuciones */
+.retribution-rules{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin-bottom:16px;
+}
+.retribution-rule{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px;
+  background:var(--soft);
+}
+.retribution-rule strong{display:block;margin-bottom:4px}
+.retribution-rate{font-size:22px;font-weight:800;margin-top:6px}
+.retribution-list{display:grid;gap:10px}
+.retribution-card{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:15px;
+  background:#fff;
+}
+.retribution-card-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:12px;
+}
+.retribution-card-head h3{margin-bottom:3px}
+.retribution-breakdown{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+.retribution-breakdown>div{
+  background:var(--soft);
+  border-radius:9px;
+  padding:10px;
+}
+.retribution-breakdown span{
+  display:block;
+  font-size:12px;
+  color:var(--muted);
+}
+.retribution-breakdown strong{
+  display:block;
+  margin-top:3px;
+  font-size:16px;
+}
+.retribution-total{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px solid var(--border);
+}
+.retribution-total .amount{font-size:24px;font-weight:800}
+.work-day-flags{
+  margin-top:10px;
+  padding:10px 11px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  background:var(--soft);
+}
+.work-day-flags label{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  font-weight:600;
+}
+.work-day-flags input{
+  width:auto;
+  margin:2px 0 0;
+}
+.special-day-badge{
+  display:inline-block;
+  margin-left:6px;
+  padding:3px 7px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:700;
+  background:#fff7ed;
+  color:#b54708;
+}
+@media(max-width:700px){
+  .retribution-rules,.retribution-breakdown{grid-template-columns:1fr}
+  .retribution-card-head,.retribution-total{flex-direction:column;align-items:flex-start}
+}
+
+
+.holiday-list{display:grid;gap:8px}
+.holiday-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;background:var(--soft)}
+.holiday-row strong{font-size:14px}
+
+
+/* Votación de propuestas y decisiones colectivas */
+.assembly-voting-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.assembly-wide{grid-column:1/-1}
+.assembly-roster-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;margin-top:7px;background:var(--soft)}
+.assembly-roster-row .state{font-size:12px;font-weight:700}
+.assembly-roster-row .state.voted{color:#067647}
+.assembly-roster-row .state.pending{color:var(--muted)}
+.motion-selector{display:grid;gap:9px;margin-top:10px}
+.motion-option{border:1px solid var(--border);border-radius:10px;padding:11px;background:#fff;text-align:left}
+.motion-option.active{border-color:var(--accent);background:var(--accent-soft)}
+.motion-option strong{display:block;margin-bottom:3px}
+.motion-type{display:inline-flex;padding:3px 7px;border-radius:999px;font-size:11px;font-weight:700;background:#eef2f7;color:#475569}
+.motion-type.extraordinary{background:#fff7ed;color:#b54708}
+.vote-status-box{margin-top:12px;padding:11px;border-radius:9px;background:var(--soft);border:1px solid var(--border)}
+.vote-status-box.error{background:#fff1f2;border-color:#fecdd3;color:#9f1239}
+.vote-status-box.good{background:#ecfdf3;border-color:#a7f3d0;color:#065f46}
+.tally-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:12px}
+.tally-item{background:var(--soft);border-radius:9px;padding:10px}
+.tally-item span{display:block;color:var(--muted);font-size:11px}
+.tally-item strong{display:block;font-size:18px;margin-top:3px}
+.result-card{margin-top:12px;padding:13px;border:1px solid var(--border);border-radius:10px;background:#fff}
+.result-card.approved{background:#ecfdf3;border-color:#a7f3d0}
+.result-card.rejected{background:#fff1f2;border-color:#fecdd3}
+.result-title{font-weight:800;margin-bottom:4px}
+.assembly-rule-note{margin-top:10px;padding:10px 11px;background:#f8fbff;border:1px solid #dbeafe;border-radius:9px;color:#475569;font-size:13px}
+@media(max-width:850px){
+  .assembly-voting-layout{grid-template-columns:1fr}
+  .assembly-wide{grid-column:auto}
+  .tally-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:500px){.tally-grid{grid-template-columns:1fr}}
+
+
+.motion-create-box{margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--soft)}
+.motion-create-box.hidden{display:none!important}
+.motion-create-box .form-grid{grid-template-columns:minmax(0,1fr) 180px}
+@media(max-width:650px){.motion-create-box .form-grid{grid-template-columns:1fr}}
+
+
+/* Historial de asambleas */
+.assembly-history-list{display:grid;gap:10px;margin-top:12px}
+.assembly-history-item{border:1px solid var(--border);border-radius:12px;background:#fff;padding:13px}
+.assembly-history-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.assembly-history-head strong{display:block}
+.assembly-history-meta{font-size:12px;color:var(--muted);margin-top:3px}
+.assembly-history-summary{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.assembly-history-summary span{font-size:12px;background:var(--soft);border-radius:999px;padding:5px 8px}
+.assembly-history-item details{margin-top:10px}
+.assembly-history-item summary{cursor:pointer;color:var(--accent);font-weight:700;font-size:13px}
+.assembly-history-votes{display:grid;gap:6px;margin-top:9px}
+.assembly-history-vote{display:flex;justify-content:space-between;gap:10px;padding:8px 9px;background:var(--soft);border-radius:8px;font-size:13px}
+.assembly-history-pagination{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px}
+.assembly-history-empty{display:none;padding:18px;text-align:center;color:var(--muted);background:var(--soft);border-radius:10px}
+@media(max-width:600px){
+  .assembly-history-head,.assembly-history-pagination,.assembly-history-vote{flex-direction:column;align-items:flex-start}
+}
+
+
+/* Verificación automática de constancia de monotributo */
+.monotributo-check{
+  margin-top:12px;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--soft);
+}
+.monotributo-check-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.monotributo-check-result{
+  margin-top:9px;
+  font-size:13px;
+}
+.monotributo-check-result.good{color:#067647}
+.monotributo-check-result.bad{color:var(--danger)}
+.monotributo-check-result.pending{color:var(--muted)}
+
+
+/* Monotributo - presentación mejorada */
+.monotributo-section{
+  display:grid;
+  gap:12px;
+}
+.monotributo-upload-card{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px;
+  background:#fff;
+}
+.monotributo-upload-card > label{
+  display:block;
+}
+.monotributo-check{
+  margin-top:12px;
+  padding:12px 13px;
+  border:1px solid #dbeafe;
+  border-radius:10px;
+  background:#f8fbff;
+}
+.monotributo-check-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.monotributo-check-title{
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.monotributo-check-icon,
+.monotributo-state-icon{
+  width:32px;
+  height:32px;
+  flex:0 0 32px;
+  display:grid;
+  place-items:center;
+  border-radius:9px;
+  font-weight:800;
+}
+.monotributo-check-icon{
+  background:var(--accent-soft);
+  color:#4338ca;
+}
+.monotributo-check-result{
+  margin-top:10px;
+  padding-left:41px;
+  font-size:13px;
+  line-height:1.45;
+}
+.monotributo-check-result.good{color:#067647}
+.monotributo-check-result.bad{color:var(--danger)}
+.monotributo-check-result.pending{color:var(--muted)}
+
+.monotributo-admin-state{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  padding:14px;
+  border:1px solid #fed7aa;
+  border-radius:12px;
+  background:#fffaf5;
+}
+.monotributo-admin-copy{
+  display:flex;
+  gap:11px;
+  min-width:0;
+}
+.monotributo-state-icon{
+  background:#ffedd5;
+  color:#c2410c;
+}
+.monotributo-admin-copy strong{
+  display:block;
+  margin-bottom:4px;
+}
+.monotributo-admin-copy p{
+  margin:0;
+  font-size:13px;
+  line-height:1.45;
+  color:var(--muted);
+}
+.monotributo-state-badge{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 9px;
+  border-radius:999px;
+  background:#ffedd5;
+  color:#b54708;
+  font-size:12px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.monotributo-state-badge:before{
+  content:"";
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#f97316;
+}
+@media(max-width:650px){
+  .monotributo-admin-state{flex-direction:column}
+  .monotributo-state-badge{margin-left:43px}
+  .monotributo-check-result{padding-left:0}
+}
+
 </style>
 </head>
 <body>
 <main class="app"><div class="layout">
-<aside class="sidebar"><div class="brand"><div class="brand-icon">C</div><div class="brand-copy"><span class="brand-name">CoopGestión</span><span class="brand-subtitle">Administración</span></div></div><nav class="nav"><button class="active" data-view="inicio">Inicio</button><button data-view="socios">Socios y aportes</button><button data-view="trabajo">Trabajo</button><button data-view="finanzas">Ingresos y gastos</button><button data-view="retiros">Retiros y excedentes</button><button data-view="fondos">Fondos</button><button data-view="asamblea">Asamblea</button></nav></aside>
+<aside class="sidebar"><div class="brand"><div class="brand-icon">C</div><div class="brand-copy"><span class="brand-name">CoopGestión</span><span class="brand-subtitle">Administración</span></div></div><nav class="nav"><button class="active" data-view="inicio">Inicio</button><button data-view="socios">Socios y aportes</button><button data-view="trabajo">Trabajo</button><button data-view="retribuciones">Retribuciones</button><button data-view="finanzas">Ingresos y gastos</button><button data-view="retiros">Retiros y excedentes</button><button data-view="fondos">Fondos</button><button data-view="asamblea">Asamblea</button><button data-view="historial-asambleas">Historial de asambleas</button></nav></aside>
 <section class="content"><div class="topbar"><div><div class="eyebrow">Cooperativa de Trabajo</div><h1 id="page-title">Resumen general</h1></div><div class="user"><div class="avatar">JP</div><div><strong>Juan Pérez</strong><small>Administrador</small></div></div></div><div id="status" class="status"></div>
 <section class="panel active" data-panel="inicio"><div class="grid3"><div class="card"><div class="metric-label">Socios activos</div><div id="metric-members" class="metric">4</div><button class="link-btn" data-go="socios">Ver socios →</button></div><div class="card"><div class="metric-label">Horas del período</div><div id="metric-hours" class="metric">102 h</div><button class="link-btn" data-go="trabajo">Registrar trabajo →</button></div><div class="card"><div class="metric-label">Resultado del período</div><div id="metric-balance" class="metric">$420.000</div><button class="link-btn" data-go="finanzas">Ver movimientos →</button></div></div><div class="actions"><h3>Tareas frecuentes</h3><div class="actions-grid"><button class="action" data-go="trabajo">＋ Registrar horas trabajadas</button><button class="action" data-go="finanzas">＋ Registrar ingreso o gasto</button><button class="action" data-go="socios">＋ Alta de socio</button><button class="action" data-go="asamblea">＋ Preparar asamblea</button></div></div></section>
 <section class="panel" data-panel="socios">
@@ -333,8 +626,8 @@
   </div>
   <div class="form-grid">
     <label>Nombre y apellido *<input id="member-name" maxlength="80" autocomplete="name"></label>
-    <label>DNI *<input id="member-dni" inputmode="numeric" maxlength="12" placeholder="Ej. 30123456"></label>
-    <label>CUIT *<input id="member-cuit" inputmode="numeric" maxlength="13" placeholder="Ej. 20-30123456-9"><div class="helper">No puede duplicarse entre socios activos.</div></label>
+    <label>DNI *<input id="member-dni" inputmode="numeric" maxlength="12" placeholder="Ej. 30123456"><div class="helper">Solo números.</div></label>
+    <label>CUIT *<input id="member-cuit" inputmode="numeric" maxlength="13" placeholder="Ej. 20-30123456-9"><div class="helper">Debe contener 11 números y no puede duplicarse entre socios existentes, aunque estén pendientes o dados de baja.</div></label>
     <label>Correo electrónico *<input id="member-email" type="email" placeholder="nombre@correo.com"></label>
   </div>
   <div class="role-note"><strong>Rol inicial: Asociado.</strong> Los cargos de Presidente, Secretario y Tesorero se administran desde la sección de Autoridades.</div>
@@ -351,14 +644,42 @@
   </div>
   <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
   <h3>Monotributo</h3>
-  <div class="form-grid">
-    <label>Constancia de monotributo (PDF) *
-      <input id="member-monotributo" type="file" accept="application/pdf,.pdf">
-      <div class="helper">Adjuntá una constancia en PDF. La revisión se realiza después del alta.</div>
-    </label>
-    <div class="role-note" style="margin-top:5px">
-      <strong>Estado inicial:</strong> la constancia quedará como <strong>Pendiente de revisión</strong> hasta que un administrador la verifique.
+  <div class="monotributo-section">
+
+    <div class="monotributo-upload-card">
+      <label>Constancia de monotributo (PDF) *
+        <input id="member-monotributo" type="file" accept="application/pdf,.pdf">
+        <div class="helper">Adjuntá una constancia en PDF. El sistema verificará el contenido y comparará el CUIT del documento con el ingresado.</div>
+      </label>
+
+      <div class="monotributo-check">
+        <div class="monotributo-check-head">
+          <div class="monotributo-check-title">
+            <div class="monotributo-check-icon">✓</div>
+            <div>
+              <strong>Verificación automática</strong>
+              <div class="helper">Control de documento y coincidencia de CUIT</div>
+            </div>
+          </div>
+          <button id="verify-monotributo" class="secondary" type="button">Verificar constancia</button>
+        </div>
+        <div id="monotributo-check-result" class="monotributo-check-result pending">
+          Pendiente de verificación.
+        </div>
+      </div>
     </div>
+
+    <div class="monotributo-admin-state">
+      <div class="monotributo-admin-copy">
+        <div class="monotributo-state-icon">i</div>
+        <div>
+          <strong>Revisión administrativa</strong>
+          <p>Después del alta, la constancia queda pendiente hasta que un administrador revise y habilite al asociado.</p>
+        </div>
+      </div>
+      <span class="monotributo-state-badge">Pendiente de revisión</span>
+    </div>
+
   </div>
   <div class="validation"><strong>Requisitos para completar el alta</strong><ul id="member-validation-list"></ul></div>
   <div class="form-actions"><button class="primary" type="submit">Registrar alta</button></div>
@@ -483,10 +804,165 @@
     </section>
   </div>
 </section>
+
+<section class="panel" data-panel="retribuciones">
+  <div class="section-head">
+    <div>
+      <h3>Liquidación de retribuciones</h3>
+      <p class="muted">La liquidación se calcula a partir de las horas registradas y de la configuración del período.</p>
+    </div>
+    <button id="refresh-retributions" class="secondary" type="button">Actualizar cálculo</button>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <h3>Configuración de liquidación</h3>
+    <p class="muted">Esta configuración se aplica por igual a todos los asociados.</p>
+
+    <div class="form-grid">
+      <label>Valor hora habitual ($)
+        <input id="normal-hour-rate" type="number" min="0" step="500" value="10000">
+      </label>
+      <label>Valor hora domingo / feriado ($)
+        <input id="special-hour-rate" type="number" min="0" step="500" value="15000">
+      </label>
+    </div>
+
+    <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
+
+    <h3>Feriados nacionales del período</h3>
+    <p class="muted">Una fecha cargada como feriado se aplica automáticamente a todos los asociados que hayan trabajado ese día.</p>
+
+    <div class="form-grid" style="align-items:end">
+      <label>Fecha del feriado
+        <input id="holiday-date" type="date">
+      </label>
+      <div class="form-actions" style="margin-top:0">
+        <button id="add-holiday" class="primary" type="button">Agregar feriado</button>
+      </div>
+    </div>
+
+    <div id="holiday-list" style="margin-top:12px"></div>
+  </div>
+
+  <div class="retribution-rules">
+    <div class="retribution-rule">
+      <strong>Días habituales</strong>
+      <span class="muted">Horas que no corresponden a domingo ni a una fecha configurada como feriado.</span>
+      <div id="normal-rate-display" class="retribution-rate">$10.000 / hora</div>
+    </div>
+    <div class="retribution-rule">
+      <strong>Domingos o feriados nacionales</strong>
+      <span class="muted">Se aplica el valor especial definido para el período.</span>
+      <div id="special-rate-display" class="retribution-rate">$15.000 / hora</div>
+    </div>
+  </div>
+
+  <div class="card soft" style="margin-bottom:14px">
+    <strong>Criterio de cálculo</strong>
+    <p id="retribution-example" class="muted" style="margin:5px 0 0"></p>
+  </div>
+
+  <div id="retribution-list" class="retribution-list"></div>
+  <div id="retribution-empty" class="hours-empty">No hay horas registradas para liquidar.</div>
+</section>
+
 <section class="panel" data-panel="finanzas"><div class="grid3"><div class="card"><div class="metric-label">Ingresos</div><div id="income-total" class="metric">$0</div></div><div class="card"><div class="metric-label">Gastos</div><div id="expense-total" class="metric">$0</div></div><div class="card"><div class="metric-label">Saldo</div><div id="finance-balance" class="metric">$0</div></div></div><form id="finance-form" class="form-card" style="margin-top:14px"><div class="form-grid"><label>Tipo<select id="finance-type"><option>Ingreso</option><option>Gasto</option></select></label><label>Concepto<input id="finance-concept" maxlength="50" placeholder="Ej. venta" required></label><label>Monto ($)<input id="finance-amount" type="number" min="1" step="100" required></label></div><div class="form-actions"><button class="primary">Registrar</button></div></form><div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Concepto</th><th>Monto</th></tr></thead><tbody id="finance-body"></tbody></table></div></section>
 <section class="panel" data-panel="retiros"><div class="card"><h3>Anticipos de retiro y excedentes</h3><p class="muted">Consultá y calculá los anticipos y excedentes correspondientes al período.</p><div class="form-grid"><label>Monto disponible para simular ($)<input id="distribution-total" type="number" min="0" step="1000" value="300000"></label></div><div class="form-actions"><button id="calculate-distribution" type="button" class="primary">Calcular distribución</button></div><p class="muted" style="margin-top:12px">La estimación se calcula en función de las horas registradas en el período.</p></div><div id="distribution-results" class="grid2" style="margin-top:12px"></div></section>
 <section class="panel" data-panel="fondos"><div class="section-head"><div><h3>Fondos de la cooperativa</h3><p class="muted">Seguimiento de fondos que deben mantenerse o reservarse.</p></div></div><div class="fund-grid"><div class="card"><div class="metric-label">Fondo de reserva</div><div class="metric">$180.000</div><div class="muted">Último movimiento: +$20.000</div></div><div class="card"><div class="metric-label">Fondo operativo</div><div class="metric">$95.000</div><div class="muted">Disponible para operación</div></div><div class="card"><div class="metric-label">Total reservado</div><div class="metric">$275.000</div><div class="muted">Actualizado en el período</div></div></div><div class="form-actions"><button id="fund-movement" class="primary" type="button">Registrar movimiento de fondo</button></div><div id="fund-note" class="card soft hidden" style="margin-top:12px">En una versión posterior, esta acción podría pedir fondo, tipo de movimiento, monto, fecha y motivo.</div></section>
-<section class="panel" data-panel="asamblea"><div class="assembly-grid"><div class="card"><div class="eyebrow">1 · Padrón</div><h3>Socios habilitados</h3><div id="assembly-roster"></div></div><div class="card"><div class="eyebrow">2 · Votación</div><h3>Propuesta</h3><p>¿Aprobar la compra de nuevo equipamiento?</p><div class="vote-actions"><button type="button" class="secondary vote-btn" data-vote="A favor">A favor</button><button type="button" class="secondary vote-btn" data-vote="En contra">En contra</button><button type="button" class="secondary vote-btn" data-vote="Abstención">Abstención</button></div><p id="vote-result" class="muted" style="margin-top:12px">Todavía no registraste un voto de prueba.</p></div><div class="card"><div class="eyebrow">3 · Acta</div><h3>Registro de decisiones</h3><textarea id="minutes-text" rows="6" placeholder="Escriba acuerdos y decisiones..."></textarea><div class="form-actions"><button id="save-minutes" type="button" class="primary">Guardar borrador</button></div></div></div></section>
+<section class="panel" data-panel="asamblea">
+  <div class="assembly-voting-layout">
+    <div class="card">
+      <div class="eyebrow">1 · Padrón</div>
+      <h3>Socios habilitados</h3>
+      <p class="muted">Cada socio activo tiene un único voto por moción.</p>
+      <div id="assembly-roster"></div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">2 · Propuestas</div>
+      <h3>Crear nueva moción</h3>
+
+      <div id="motion-create-box" class="motion-create-box">
+        <div class="form-grid">
+          <label>Título de la moción *
+            <input id="new-motion-title" maxlength="140" placeholder="Ej. Compra de equipamiento">
+          </label>
+          <label>Tipo *
+            <select id="new-motion-type">
+              <option value="ordinary">Ordinaria</option>
+              <option value="extraordinary">Extraordinaria</option>
+            </select>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button id="create-motion" class="primary" type="button">＋ Agregar moción</button>
+        </div>
+      </div>
+
+      <h3 style="margin-top:16px">Mociones abiertas</h3>
+      <div id="assembly-motions" class="motion-selector"></div>
+      <div id="assembly-motion-rule" class="assembly-rule-note"></div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">3 · Emisión del voto</div>
+      <h3 id="assembly-vote-title">Votar propuesta</h3>
+      <label>Socio que emite el voto
+        <select id="assembly-voter"></select>
+      </label>
+      <div class="vote-actions">
+        <button type="button" class="secondary assembly-vote-btn" data-vote="A favor">A favor</button>
+        <button type="button" class="secondary assembly-vote-btn" data-vote="En contra">En contra</button>
+        <button type="button" class="secondary assembly-vote-btn" data-vote="Abstención">Abstención</button>
+      </div>
+      <div id="assembly-vote-status" class="vote-status-box">Seleccioná un socio y emití su voto.</div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">4 · Cómputo automático</div>
+      <h3>Resultado de la votación</h3>
+      <div id="assembly-tally" class="tally-grid"></div>
+      <div id="assembly-result" class="result-card"></div>
+      <div class="form-actions">
+        <button id="export-motion-result" class="secondary" type="button">Exportar resultado (.json)</button>
+        <button id="close-motion" class="primary" type="button">Cerrar moción</button>
+      </div>
+    </div>
+
+    <div class="card assembly-wide">
+      <div class="eyebrow">5 · Acta</div>
+      <h3>Registro de decisiones</h3>
+      <p class="muted">Cuando finaliza la votación, el resultado puede incorporarse al borrador del acta.</p>
+      <textarea id="minutes-text" rows="7" placeholder="Escriba acuerdos y decisiones..."></textarea>
+      <div class="form-actions">
+        <button id="add-result-to-minutes" type="button" class="secondary">Agregar resultado de la moción</button>
+        <button id="save-minutes" type="button" class="primary">Guardar borrador</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="panel" data-panel="historial-asambleas">
+  <div class="section-head">
+    <div>
+      <h3>Historial de asambleas</h3>
+      <p class="muted">Consultá las mociones cerradas, ordenadas de la más reciente a la más antigua.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="assembly-history-list" class="assembly-history-list"></div>
+    <div id="assembly-history-empty" class="assembly-history-empty">Todavía no hay mociones cerradas.</div>
+
+    <div class="assembly-history-pagination">
+      <button id="assembly-history-prev" class="secondary" type="button">← Anterior</button>
+      <div id="assembly-history-page-info" class="page-info"></div>
+      <button id="assembly-history-next" class="secondary" type="button">Siguiente →</button>
+    </div>
+  </div>
+</section>
+
 </section></div></main>
 
 <dialog id="reactivate-dialog">
@@ -539,11 +1015,86 @@
 </dialog>
 
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+if(window.pdfjsLib){
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+</script>
 <script>
 (()=>{
 const STORAGE_KEY='coopgestion_socios_v2';
 const SPECIAL_ROLES=['Presidente','Secretario','Tesorero'];
-const titles={inicio:'Resumen general',socios:'Socios y aportes',trabajo:'Registro de trabajo',finanzas:'Ingresos y gastos',retiros:'Retiros y excedentes',fondos:'Fondos de la cooperativa',asamblea:'Asamblea'};
+
+const ASSEMBLY_VOTES_KEY='coopgestion_asamblea_votos_v1';
+const ASSEMBLY_MOTIONS_KEY='coopgestion_asamblea_mociones_v1';
+const ASSEMBLY_HISTORY_KEY='coopgestion_asamblea_historial_v1';
+
+const ASSEMBLY_MINUTES_DRAFT_KEY='coopgestion_asamblea_acta_borrador_v1';
+
+function loadAssemblyMinutesDraft(){
+  try{
+    return localStorage.getItem(ASSEMBLY_MINUTES_DRAFT_KEY)||'';
+  }catch(e){
+    return '';
+  }
+}
+
+function persistAssemblyMinutesDraft(value){
+  localStorage.setItem(ASSEMBLY_MINUTES_DRAFT_KEY,String(value||''));
+}
+
+
+const DEFAULT_ASSEMBLY_MOTIONS=[
+  {id:'compra-maquinaria-1200000',title:'Aprobación de compra de nueva maquinaria gráfica por $1.200.000',type:'ordinary',typeLabel:'Moción ordinaria'},
+  {id:'reforma-estatuto-social',title:'Reforma del Estatuto Social',type:'extraordinary',typeLabel:'Moción extraordinaria'}
+];
+
+function loadAssemblyVotes(){
+  try{
+    const raw=localStorage.getItem(ASSEMBLY_VOTES_KEY);
+    const parsed=raw?JSON.parse(raw):{};
+    return parsed&&typeof parsed==='object'&&!Array.isArray(parsed)?parsed:{};
+  }catch(e){return {}}
+}
+
+function loadAssemblyMotions(){
+  try{
+    const raw=localStorage.getItem(ASSEMBLY_MOTIONS_KEY);
+    const parsed=raw?JSON.parse(raw):null;
+    if(Array.isArray(parsed))return parsed;
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_ASSEMBLY_MOTIONS));
+}
+
+function loadAssemblyHistory(){
+  try{
+    const raw=localStorage.getItem(ASSEMBLY_HISTORY_KEY);
+    const parsed=raw?JSON.parse(raw):[];
+    return Array.isArray(parsed)?parsed:[];
+  }catch(e){return []}
+}
+
+let assemblyVotes=loadAssemblyVotes();
+let ASSEMBLY_MOTIONS=loadAssemblyMotions();
+let assemblyHistory=loadAssemblyHistory();
+let selectedAssemblyMotionId=ASSEMBLY_MOTIONS[0]?.id||'';
+let assemblyHistoryPage=1;
+const ASSEMBLY_HISTORY_PER_PAGE=4;
+
+function persistAssemblyVotes(){
+  localStorage.setItem(ASSEMBLY_VOTES_KEY,JSON.stringify(assemblyVotes));
+}
+
+function persistAssemblyMotions(){
+  localStorage.setItem(ASSEMBLY_MOTIONS_KEY,JSON.stringify(ASSEMBLY_MOTIONS));
+}
+
+function persistAssemblyHistory(){
+  localStorage.setItem(ASSEMBLY_HISTORY_KEY,JSON.stringify(assemblyHistory));
+}
+
+const titles={inicio:'Resumen general',socios:'Socios y aportes',trabajo:'Registro de trabajo',retribuciones:'Liquidación de retribuciones',finanzas:'Ingresos y gastos',retiros:'Retiros y excedentes',fondos:'Fondos de la cooperativa',asamblea:'Asamblea', 'historial-asambleas':'Historial de asambleas'};
 const defaultMembers=[
 {id:1,name:'Juan Pérez',dni:'30123456',cuit:'20-30123456-9',email:'juan@coop.test',date:'12/03/2024',capitalSubscribed:500000,capitalIntegrated:500000,monotributoFile:'constancia_juan.pdf',monotributoStatus:'Al día',roles:['Presidente'],active:true},
 {id:2,name:'María Ríos',dni:'33444555',cuit:'27-33444555-4',email:'maria@coop.test',date:'08/05/2024',capitalSubscribed:400000,capitalIntegrated:100000,monotributoFile:'constancia_maria.pdf',monotributoStatus:'Al día',roles:['Secretario'],active:true},
@@ -666,26 +1217,330 @@ localStorage.setItem(HOURS_KEY,JSON.stringify(list));
 return list;
 }
 let hours=loadHours();
+
+const RETRIBUTION_SETTINGS_KEY='coopgestion_retribution_settings_v2';
+
+function workDateToIso(dateStr){
+  const parts=String(dateStr||'').split('/');
+  if(parts.length!==3)return '';
+  const [d,m,y]=parts;
+  return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+function loadRetributionSettings(){
+  const settings={normalRate:10000,specialRate:15000,holidays:[]};
+
+  try{
+    const raw=localStorage.getItem(RETRIBUTION_SETTINGS_KEY);
+    if(raw){
+      const parsed=JSON.parse(raw);
+      if(parsed&&typeof parsed==='object'){
+        if(Number.isFinite(Number(parsed.normalRate)))settings.normalRate=Math.max(0,Number(parsed.normalRate));
+        if(Number.isFinite(Number(parsed.specialRate)))settings.specialRate=Math.max(0,Number(parsed.specialRate));
+        if(Array.isArray(parsed.holidays))settings.holidays=parsed.holidays.filter(Boolean);
+      }
+    }
+  }catch(e){}
+
+  // Compatibilidad con la versión anterior: si alguna carga estaba marcada
+  // individualmente como feriado, su fecha pasa a la configuración global.
+  hours.forEach(h=>{
+    if(h&&h.isHoliday===true){
+      const iso=workDateToIso(h.date);
+      if(iso&&!settings.holidays.includes(iso))settings.holidays.push(iso);
+    }
+    if(h&&Object.prototype.hasOwnProperty.call(h,'isHoliday'))delete h.isHoliday;
+  });
+
+  settings.holidays=[...new Set(settings.holidays)].sort();
+  localStorage.setItem(RETRIBUTION_SETTINGS_KEY,JSON.stringify(settings));
+  localStorage.setItem(HOURS_KEY,JSON.stringify(hours));
+  return settings;
+}
+
+let retributionSettings=loadRetributionSettings();
+
+function persistRetributionSettings(){
+  localStorage.setItem(RETRIBUTION_SETTINGS_KEY,JSON.stringify(retributionSettings));
+}
+
+
+const RETRIBUTION_TRANSFER_KEY='coopgestion_retribuciones_transferidas_v1';
+
+function loadRetributionTransfers(){
+  try{
+    const raw=localStorage.getItem(RETRIBUTION_TRANSFER_KEY);
+    const parsed=raw?JSON.parse(raw):{};
+    return parsed&&typeof parsed==='object'&&!Array.isArray(parsed)?parsed:{};
+  }catch(e){
+    return {};
+  }
+}
+
+let retributionTransfers=loadRetributionTransfers();
+
+function persistRetributionTransfers(){
+  localStorage.setItem(RETRIBUTION_TRANSFER_KEY,JSON.stringify(retributionTransfers));
+}
+
 function persistHours(){localStorage.setItem(HOURS_KEY,JSON.stringify(hours))}
 const movements=[{type:'Ingreso',concept:'Venta mensual',amount:850000},{type:'Gasto',concept:'Insumos',amount:270000},{type:'Gasto',concept:'Servicios',amount:160000}];
 const $=id=>document.getElementById(id),money=n=>'$'+Math.max(0,Number(n)||0).toLocaleString('es-AR'),status=$('status');
 function persistMembers(){localStorage.setItem(STORAGE_KEY,JSON.stringify(members))}
 function notify(msg,type='ok'){status.textContent=msg;status.style.display='block';status.style.background=type==='error'?'#fff1f2':'#ecfdf3';status.style.borderColor=type==='error'?'#fecdd3':'#a7f3d0';status.style.color=type==='error'?'#9f1239':'#065f46';clearTimeout(notify.t);notify.t=setTimeout(()=>status.style.display='none',3200)}
-function go(view){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===view));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('page-title').textContent=titles[view]||'CoopGestión';if(view==='asamblea')renderAssembly()}
+function go(view){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===view));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('page-title').textContent=titles[view]||'CoopGestión';if(view==='asamblea')renderAssembly();if(view==='historial-asambleas')renderAssemblyHistory()}
 document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.view)));
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
+
+let monotributoVerification={
+  checked:false,
+  valid:false,
+  documentLooksValid:false,
+  cuitMatches:false,
+  extractedCuit:'',
+  message:'Pendiente de verificación.'
+};
+
+function resetMonotributoVerification(){
+  monotributoVerification={
+    checked:false,
+    valid:false,
+    documentLooksValid:false,
+    cuitMatches:false,
+    extractedCuit:'',
+    message:'Pendiente de verificación.'
+  };
+  renderMonotributoVerification();
+}
+
+function renderMonotributoVerification(){
+  const box=$('monotributo-check-result');
+  if(!box)return;
+
+  box.className='monotributo-check-result '+(
+    !monotributoVerification.checked
+      ? 'pending'
+      : (monotributoVerification.valid?'good':'bad')
+  );
+  box.textContent=monotributoVerification.message;
+}
+
+async function extractPdfText(file){
+  if(!window.pdfjsLib){
+    throw new Error('No se pudo cargar el verificador de PDF.');
+  }
+
+  const buffer=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:new Uint8Array(buffer)}).promise;
+  let text='';
+
+  for(let pageNumber=1;pageNumber<=pdf.numPages;pageNumber++){
+    const page=await pdf.getPage(pageNumber);
+    const content=await page.getTextContent();
+    text+=' '+content.items.map(item=>item.str||'').join(' ');
+  }
+
+  return text;
+}
+
+function findCuitInText(text){
+  const matches=String(text||'').match(/\b(?:20|23|24|27|30|33|34)[-\s]?\d{8}[-\s]?\d\b/g)||[];
+  return matches.length?digits(matches[0]):'';
+}
+
+async function verifyMonotributoPdf(){
+  const file=$('member-monotributo').files[0]||null;
+  const enteredCuit=digits($('member-cuit').value);
+
+  if(!file){
+    monotributoVerification={
+      checked:true,
+      valid:false,
+      documentLooksValid:false,
+      cuitMatches:false,
+      extractedCuit:'',
+      message:'Seleccioná primero una constancia en PDF.'
+    };
+    renderMonotributoVerification();
+    validateFormPreview();
+    return;
+  }
+
+  if(enteredCuit.length!==11){
+    monotributoVerification={
+      checked:true,
+      valid:false,
+      documentLooksValid:false,
+      cuitMatches:false,
+      extractedCuit:'',
+      message:'Ingresá un CUIT válido de 11 dígitos antes de verificar el PDF.'
+    };
+    renderMonotributoVerification();
+    validateFormPreview();
+    return;
+  }
+
+  const result=$('monotributo-check-result');
+  result.className='monotributo-check-result pending';
+  result.textContent='Analizando el PDF...';
+
+  try{
+    const pdfText=await extractPdfText(file);
+    const normalized=pdfText.toLowerCase();
+
+    const documentLooksValid=
+      normalized.includes('monotributo') ||
+      normalized.includes('monotributista') ||
+      normalized.includes('constancia de opcion') ||
+      normalized.includes('constancia de opción');
+
+    const allDigits=digits(pdfText);
+    const extractedCuit=findCuitInText(pdfText);
+    const cuitMatches=
+      allDigits.includes(enteredCuit) ||
+      extractedCuit===enteredCuit;
+
+    let message='';
+    if(documentLooksValid&&cuitMatches){
+      message='✓ La constancia parece corresponder a monotributo y el CUIT coincide con el asociado.';
+    }else if(!documentLooksValid&&cuitMatches){
+      message='✕ El CUIT coincide, pero no se encontraron referencias claras a monotributo en el PDF.';
+    }else if(documentLooksValid&&!cuitMatches){
+      message='✕ El documento parece ser una constancia de monotributo, pero el CUIT no coincide con el ingresado.';
+    }else{
+      message='✕ No se pudo validar la constancia ni encontrar un CUIT coincidente.';
+    }
+
+    monotributoVerification={
+      checked:true,
+      valid:documentLooksValid&&cuitMatches,
+      documentLooksValid,
+      cuitMatches,
+      extractedCuit,
+      message
+    };
+  }catch(err){
+    monotributoVerification={
+      checked:true,
+      valid:false,
+      documentLooksValid:false,
+      cuitMatches:false,
+      extractedCuit:'',
+      message:'No se pudo leer el contenido del PDF. Probá con otra constancia o revisala manualmente.'
+    };
+  }
+
+  renderMonotributoVerification();
+  validateFormPreview();
+}
+
 const digits=v=>String(v||'').replace(/\D/g,'');
 function formatCUIT(v){const d=digits(v).slice(0,11);if(d.length<=2)return d;if(d.length<=10)return d.slice(0,2)+'-'+d.slice(2);return d.slice(0,2)+'-'+d.slice(2,10)+'-'+d.slice(10)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function getCapital(){return Math.max(0,Number($('member-capital').value)||0)} function getInitial(){return Math.max(0,Number($('member-initial-contribution').value)||0)}
-function validationState(){const name=$('member-name').value.trim(),dni=digits($('member-dni').value),cuit=digits($('member-cuit').value),email=$('member-email').value.trim(),cap=getCapital(),ini=getInitial(),file=$('member-monotributo').files[0]||null,min=cap*.05;const activeDuplicate=members.find(m=>m.active&&digits(m.cuit)===cuit),inactiveDuplicate=members.find(m=>!m.active&&digits(m.cuit)===cuit),emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),pdfOk=file?(file.type==='application/pdf'||/\.pdf$/i.test(file.name)):false;return{nameOk:name.length>=3,dniOk:dni.length>=7,cuitOk:cuit.length===11,emailOk,capOk:cap>0,initialOk:cap>0&&ini>=min&&ini<=cap,fileOk:pdfOk,activeDuplicate,inactiveDuplicate,valid:name.length>=3&&dni.length>=7&&cuit.length===11&&emailOk&&cap>0&&ini>=min&&ini<=cap&&pdfOk&&!activeDuplicate}}
-function validateFormPreview(){const v=validationState(),items=[[v.nameOk,'Nombre y apellido completos'],[v.dniOk,'DNI informado'],[v.cuitOk,'CUIT con 11 dígitos'],[v.emailOk,'Correo electrónico válido'],[v.capOk,'Capital social suscripto mayor a $0'],[v.initialOk,'Aporte inicial entre el 5% mínimo y el 100% del capital'],[v.fileOk,'Constancia de monotributo en PDF'],[!v.activeDuplicate,'CUIT no duplicado entre socios activos']];$('member-validation-list').innerHTML=items.map(([ok,t])=>`<li class="${ok?'good':'bad'}">${ok?'✓':'✕'} ${t}</li>`).join('')}
+function validationState(){
+  const name=$('member-name').value.trim(),
+        rawDni=$('member-dni').value.trim(),
+        rawCuit=$('member-cuit').value.trim(),
+        dni=digits(rawDni),
+        cuit=digits(rawCuit),
+        email=$('member-email').value.trim(),
+        cap=getCapital(),
+        ini=getInitial(),
+        file=$('member-monotributo').files[0]||null,
+        min=cap*.05;
+
+  const dniNumeric=/^\d+$/.test(rawDni);
+  const cuitNumeric=/^[\d-]+$/.test(rawCuit) && cuit.length===11;
+
+  const duplicate=members.find(m=>digits(m.cuit)===cuit);
+  const activeDuplicate=duplicate&&duplicate.active&&!isPendingVerification(duplicate)?duplicate:null;
+  const pendingDuplicate=duplicate&&isPendingVerification(duplicate)?duplicate:null;
+  const inactiveDuplicate=duplicate&&!duplicate.active&&!isPendingVerification(duplicate)?duplicate:null;
+
+  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const pdfOk=file?(file.type==='application/pdf'||/\.pdf$/i.test(file.name)):false;
+
+  return{
+    nameOk:name.length>=3,
+    dniOk:dniNumeric&&dni.length>=7,
+    dniNumeric,
+    cuitOk:cuitNumeric,
+    cuitNumeric,
+    emailOk,
+    capOk:cap>0,
+    initialOk:cap>0&&ini>=min&&ini<=cap,
+    fileOk:pdfOk,
+    monotributoVerified:monotributoVerification.valid,
+    duplicate,
+    activeDuplicate,
+    pendingDuplicate,
+    inactiveDuplicate,
+    valid:name.length>=3&&dniNumeric&&dni.length>=7&&cuitNumeric&&emailOk&&cap>0&&ini>=min&&ini<=cap&&pdfOk&&monotributoVerification.valid&&!duplicate
+  };
+}
+function validateFormPreview(){
+  const v=validationState(),
+        items=[
+          [v.nameOk,'Nombre y apellido completos'],
+          [v.dniOk,'DNI válido: solo números'],
+          [v.cuitOk,'CUIT válido: 11 números'],
+          [v.emailOk,'Correo electrónico válido'],
+          [v.capOk,'Capital social suscripto mayor a $0'],
+          [v.initialOk,'Aporte inicial entre el 5% mínimo y el 100% del capital'],
+          [v.fileOk,'Constancia de monotributo en PDF'],
+          [v.monotributoVerified,'Constancia verificada y CUIT coincidente'],
+          [!v.duplicate,'CUIT no registrado previamente']
+        ];
+  $('member-validation-list').innerHTML=items.map(([ok,t])=>`<li class="${ok?'good':'bad'}">${ok?'✓':'✕'} ${t}</li>`).join('');
+}
 function updateCapitalPreview(){const cap=getCapital(),ini=getInitial(),min=cap*.05;$('minimum-contribution').textContent=money(Math.round(min));$('integrated-preview').textContent=money(ini);$('pending-preview').textContent=money(Math.max(0,cap-ini));validateFormPreview()}
-$('member-cuit').addEventListener('input',e=>{e.target.value=formatCUIT(e.target.value);validateFormPreview()});['member-dni','member-name','member-email'].forEach(id=>$(id).addEventListener('input',validateFormPreview));['member-capital','member-initial-contribution'].forEach(id=>$(id).addEventListener('input',updateCapitalPreview));$('member-monotributo').addEventListener('change',validateFormPreview);
-function resetMemberForm(){$('member-form').reset();$('member-capital').value='370000';$('member-initial-contribution').value='18500';updateCapitalPreview()}
+$('member-cuit').addEventListener('input',e=>{
+  e.target.value=formatCUIT(e.target.value);
+  resetMonotributoVerification();
+  validateFormPreview();
+});
+$('member-dni').addEventListener('input',e=>{
+  e.target.value=digits(e.target.value).slice(0,12);
+  validateFormPreview();
+});
+['member-name','member-email'].forEach(id=>$(id).addEventListener('input',validateFormPreview));['member-capital','member-initial-contribution'].forEach(id=>$(id).addEventListener('input',updateCapitalPreview));$('member-monotributo').addEventListener('change',()=>{
+  resetMonotributoVerification();
+  validateFormPreview();
+});
+$('verify-monotributo').addEventListener('click',verifyMonotributoPdf);
+function resetMemberForm(){$('member-form').reset();$('member-capital').value='370000';$('member-initial-contribution').value='18500';resetMonotributoVerification();updateCapitalPreview()}
 $('show-member-form').addEventListener('click',()=>{$('member-form').classList.remove('hidden');$('member-name').focus();validateFormPreview()});$('cancel-member').addEventListener('click',()=>{$('member-form').classList.add('hidden');resetMemberForm()});
 let pendingReactivation=null;
-$('member-form').addEventListener('submit',e=>{e.preventDefault();const v=validationState();if(v.activeDuplicate){notify(`No se puede dar de alta: el CUIT ya pertenece a ${v.activeDuplicate.name}, socio activo.`,'error');return}if(v.inactiveDuplicate){pendingReactivation=v.inactiveDuplicate;$('reactivate-text').textContent=`El CUIT ingresado pertenece a ${v.inactiveDuplicate.name}, actualmente dado de baja. ¿Desea reincorporarlo en lugar de crear un registro duplicado?`;$('reactivate-dialog').showModal();return}if(!v.valid){notify('No se puede completar el alta. Revisá los campos obligatorios y los requisitos indicados.','error');validateFormPreview();return}createNewMember()});
+$('member-form').addEventListener('submit',e=>{
+  e.preventDefault();
+  const v=validationState();
+
+  if(v.activeDuplicate){
+    notify(`No se puede dar de alta: el CUIT ya pertenece a ${v.activeDuplicate.name}, socio activo.`,'error');
+    return;
+  }
+
+  if(v.pendingDuplicate){
+    notify(`No se puede crear otro registro: el CUIT ya pertenece a ${v.pendingDuplicate.name}, que está pendiente de verificación.`,'error');
+    return;
+  }
+
+  if(v.inactiveDuplicate){
+    pendingReactivation=v.inactiveDuplicate;
+    $('reactivate-text').textContent=`El CUIT ingresado pertenece a ${v.inactiveDuplicate.name}, actualmente dado de baja. No se creará un socio duplicado. ¿Desea reincorporar y actualizar el registro existente?`;
+    $('reactivate-dialog').showModal();
+    return;
+  }
+
+  if(!v.valid){
+    notify('No se puede completar el alta. Revisá los campos obligatorios y los requisitos indicados.','error');
+    validateFormPreview();
+    return;
+  }
+
+  createNewMember();
+});
 function createNewMember(){
   const cap=getCapital(),ini=getInitial(),file=$('member-monotributo').files[0],
     d=new Date(),date=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
@@ -701,6 +1556,8 @@ function createNewMember(){
     capitalIntegrated:ini,
     monotributoFile:file.name,
     monotributoStatus:'Pendiente de revisión',
+    monotributoAutoVerified:true,
+    monotributoCuitMatched:true,
     verificationPending:true,
     roles:[],
     active:false
@@ -713,7 +1570,7 @@ function createNewMember(){
   resetMemberForm();
   notify('Alta registrada. El asociado quedó pendiente de verificación.');
 }
-$('reactivate-confirm').addEventListener('click',()=>{if(!pendingReactivation)return;const v=validationState();if(!v.nameOk||!v.dniOk||!v.cuitOk||!v.emailOk||!v.capOk||!v.initialOk||!v.fileOk){$('reactivate-dialog').close();notify('Para reincorporar al socio deben completarse todos los campos obligatorios.','error');pendingReactivation=null;return}const file=$('member-monotributo').files[0];Object.assign(pendingReactivation,{name:$('member-name').value.trim(),dni:digits($('member-dni').value),email:$('member-email').value.trim(),capitalSubscribed:getCapital(),capitalIntegrated:getInitial(),monotributoFile:file.name,monotributoStatus:'Pendiente de revisión',verificationPending:true,roles:[],active:false});persistMembers();renderAll();$('reactivate-dialog').close();$('member-form').classList.add('hidden');resetMemberForm();notify('La reincorporación quedó pendiente de verificación.');pendingReactivation=null});$('reactivate-cancel').addEventListener('click',()=>{$('reactivate-dialog').close();pendingReactivation=null});
+$('reactivate-confirm').addEventListener('click',()=>{if(!pendingReactivation)return;const v=validationState();if(!v.nameOk||!v.dniOk||!v.cuitOk||!v.emailOk||!v.capOk||!v.initialOk||!v.fileOk||!v.monotributoVerified){$('reactivate-dialog').close();notify('Para reincorporar al socio deben completarse todos los campos obligatorios.','error');pendingReactivation=null;return}const file=$('member-monotributo').files[0];Object.assign(pendingReactivation,{name:$('member-name').value.trim(),dni:digits($('member-dni').value),email:$('member-email').value.trim(),capitalSubscribed:getCapital(),capitalIntegrated:getInitial(),monotributoFile:file.name,monotributoStatus:'Pendiente de revisión',monotributoAutoVerified:true,monotributoCuitMatched:true,verificationPending:true,roles:[],active:false});persistMembers();renderAll();$('reactivate-dialog').close();$('member-form').classList.add('hidden');resetMemberForm();notify('La reincorporación quedó pendiente de verificación.');pendingReactivation=null});$('reactivate-cancel').addEventListener('click',()=>{$('reactivate-dialog').close();pendingReactivation=null});
 function isPendingVerification(member){
   return member?.verificationPending===true;
 }
@@ -861,10 +1718,11 @@ function saveSelectedRole(){
     previous.roles=memberSpecialRoles(previous).filter(r=>r!==editingAuthorityRole);
   }
 
+  const assignedRole=editingAuthorityRole;
   persistMembers();
   renderAll();
   closeRoleDialog();
-  notify(`${editingAuthorityRole} asignado a ${target.name}.`);
+  notify(`${assignedRole} asignado a ${target.name}.`);
 }
 
 $('role-dialog-close').addEventListener('click',closeRoleDialog);
@@ -930,6 +1788,7 @@ function showMemberDetail(id){
     ['Capital integrado',money(m.capitalIntegrated||0)],
     ['Saldo pendiente',money(pending)],
     ['Monotributo',m.monotributoStatus||'Pendiente de revisión'],
+    ['Verificación automática',m.monotributoAutoVerified&&m.monotributoCuitMatched?'PDF válido · CUIT coincidente':'Pendiente / no verificada'],
     ['Constancia',m.monotributoFile||'No cargada']
   ];
 
@@ -1098,8 +1957,503 @@ $('members-next').addEventListener('click',()=>{
 $('member-detail-close').addEventListener('click',()=>$('member-detail-dialog').close());
 function renderMemberSelect(){const sel=$('hours-member'),prev=sel.value;sel.innerHTML='';members.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=m.name+(m.active?'':' (Baja)');sel.appendChild(o)});if(prev&&members.some(m=>m.name===prev))sel.value=prev;if(typeof renderHoursValidation==='function')renderHoursValidation()}
 function updateMetrics(){$('metric-members').textContent=members.filter(m=>m.active).length;const total=hours.reduce((s,h)=>s+h.hours,0);$('metric-hours').textContent=total.toLocaleString('es-AR')+' h'}
-function renderAssembly(){const box=$('assembly-roster');box.innerHTML='';members.filter(m=>m.active).forEach(m=>{const row=document.createElement('div');row.className='soft';row.style.cssText='padding:9px 10px;border-radius:8px;margin-top:7px';row.innerHTML=`<strong>${esc(m.name)}</strong><div class="muted">${esc(displayRoles(m).join(' · '))} · Habilitado</div>`;box.appendChild(row)})}
-function renderAll(){renderMembers();renderMemberSelect();updateMetrics();renderAssembly();renderRoleSummary()}
+function selectedAssemblyMotion(){
+  if(!ASSEMBLY_MOTIONS.length)return null;
+  const found=ASSEMBLY_MOTIONS.find(m=>m.id===selectedAssemblyMotionId);
+  if(found)return found;
+  selectedAssemblyMotionId=ASSEMBLY_MOTIONS[0].id;
+  return ASSEMBLY_MOTIONS[0];
+}
+
+function votesForMotion(motionId){
+  const stored=assemblyVotes[motionId];
+  return stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:{};
+}
+
+function assemblyTally(motionId){
+  const enabled=members.filter(m=>m.active);
+  const votes=votesForMotion(motionId);
+  let favor=0,contra=0,abstention=0;
+
+  enabled.forEach(member=>{
+    const vote=votes[String(member.id)];
+    if(vote==='A favor')favor++;
+    else if(vote==='En contra')contra++;
+    else if(vote==='Abstención')abstention++;
+  });
+
+  const emitted=favor+contra+abstention;
+  const total=enabled.length;
+  const affirmativePct=total?favor/total:0;
+  return{enabled,votes,favor,contra,abstention,emitted,total,affirmativePct};
+}
+
+function assemblyMotionOutcome(motion){
+  if(!motion)return{final:false,status:'Sin moción abierta',className:'',detail:'Creá o seleccioná una moción para comenzar.'};
+
+  const tally=assemblyTally(motion.id);
+
+  if(!tally.total){
+    return{final:false,status:'Sin socios habilitados',className:'',detail:'No hay socios activos habilitados para participar.'};
+  }
+
+  if(tally.emitted<tally.total){
+    return{final:false,status:'EN VOTACIÓN',className:'',detail:`${tally.emitted} de ${tally.total} socios habilitados ya emitieron su voto.`};
+  }
+
+  const pct=tally.affirmativePct*100;
+
+  if(motion.type==='extraordinary'){
+    const approved=tally.affirmativePct>=0.66;
+    return{
+      final:true,
+      approved,
+      status:approved?'APROBADA':'RECHAZADA',
+      className:approved?'approved':'rejected',
+      detail:approved
+        ? `Aprobada por alcanzar la Mayoría Especial del 66% (${pct.toFixed(0)}% afirmativo).`
+        : `Rechazada por no alcanzar la Mayoría Especial del 66% (${pct.toFixed(0)}% afirmativo).`
+    };
+  }
+
+  const approved=tally.affirmativePct>0.50;
+  return{
+    final:true,
+    approved,
+    status:approved?'APROBADA':'RECHAZADA',
+    className:approved?'approved':'rejected',
+    detail:approved
+      ? `Aprobada por Mayoría Simple (${pct.toFixed(0)}% afirmativo).`
+      : `Rechazada por no alcanzar la Mayoría Simple (${pct.toFixed(0)}% afirmativo).`
+  };
+}
+
+function updateAssemblyVoteStatus(){
+  const motion=selectedAssemblyMotion();
+  const voter=$('assembly-voter');
+  const box=$('assembly-vote-status');
+  const buttons=document.querySelectorAll('.assembly-vote-btn');
+
+  buttons.forEach(btn=>btn.disabled=!motion);
+  box.className='vote-status-box';
+
+  if(!motion){
+    box.textContent='No hay una moción abierta. Creá una nueva moción para comenzar.';
+    if(voter)voter.disabled=true;
+    return;
+  }
+
+  if(voter)voter.disabled=false;
+  const voterId=voter.value;
+
+  if(!voterId){
+    box.textContent='Seleccioná un socio habilitado para emitir el voto.';
+    return;
+  }
+
+  const member=members.find(m=>String(m.id)===String(voterId));
+  if(!member||!member.active){
+    box.textContent='El socio seleccionado no está habilitado para votar.';
+    box.classList.add('error');
+    buttons.forEach(btn=>btn.disabled=true);
+    return;
+  }
+
+  const existing=votesForMotion(motion.id)[String(member.id)];
+  if(existing){
+    box.textContent=`Voto Emitido: ${member.name} ya votó "${existing}" en esta moción. Su voto ya fue registrado y contabilizado.`;
+    box.classList.add('good');
+    buttons.forEach(btn=>btn.disabled=true);
+    return;
+  }
+
+  box.textContent=`${member.name} está habilitado para votar esta moción.`;
+}
+
+function formatClosedAt(value){
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return 'Fecha no disponible';
+  return date.toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'});
+}
+
+function historyItemById(id){
+  return assemblyHistory.find(item=>String(item.id)===String(id))||null;
+}
+
+function exportHistoryItem(id){
+  const item=historyItemById(id);
+  if(!item)return;
+
+  const blob=new Blob([JSON.stringify(item,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const safeName=String(item.motion?.title||'mocion')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/^-+|-+$/g,'')
+    .slice(0,60)||'mocion';
+
+  a.href=url;
+  a.download=`resultado-${safeName}.json`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  notify('Resultado histórico exportado.');
+}
+
+function renderAssemblyHistory(){
+  const list=$('assembly-history-list');
+  if(!list)return;
+
+  const sorted=assemblyHistory
+    .slice()
+    .sort((a,b)=>new Date(b.closedAt)-new Date(a.closedAt));
+
+  const totalPages=Math.max(1,Math.ceil(sorted.length/ASSEMBLY_HISTORY_PER_PAGE));
+  assemblyHistoryPage=Math.min(Math.max(assemblyHistoryPage,1),totalPages);
+
+  const start=(assemblyHistoryPage-1)*ASSEMBLY_HISTORY_PER_PAGE;
+  const pageItems=sorted.slice(start,start+ASSEMBLY_HISTORY_PER_PAGE);
+
+  list.innerHTML='';
+
+  pageItems.forEach(item=>{
+    const article=document.createElement('article');
+    article.className='assembly-history-item';
+
+    // Compatibilidad con historiales creados por versiones anteriores:
+    // si no existe electorate, usamos el snapshot de votes ya guardado.
+    const frozenVotes=Array.isArray(item.votes)?item.votes:[];
+    const votes=frozenVotes.map(v=>`
+      <div class="assembly-history-vote">
+        <span><strong>${esc(v.socio)}</strong>${Array.isArray(v.roles)&&v.roles.length?` · ${esc(v.roles.join(' · '))}`:''}</span>
+        <span>${esc(v.voto)}</span>
+      </div>
+    `).join('');
+
+    article.innerHTML=`
+      <div class="assembly-history-head">
+        <div>
+          <strong>${esc(item.motion.title)}</strong>
+          <div class="assembly-history-meta">${esc(item.motion.typeLabel)} · Cerrada ${esc(formatClosedAt(item.closedAt))}</div>
+        </div>
+        <span class="badge ${item.result.status==='APROBADA'?'':'off'}">${esc(item.result.status)}</span>
+      </div>
+
+      <div class="assembly-history-summary">
+        <span>${item.result.aFavor} a favor</span>
+        <span>${item.result.enContra} en contra</span>
+        <span>${item.result.abstenciones} abstenciones</span>
+        <span>${item.result.votosEmitidos}/${item.result.sociosHabilitados} votos</span>
+      </div>
+
+      <details>
+        <summary>Ver detalles</summary>
+        <div class="helper" style="margin-top:8px">${esc(item.result.detalle)}</div>
+        <div class="assembly-history-votes">${votes||'<div class="muted">Sin detalle de votos.</div>'}</div>
+        <div class="form-actions">
+          <button type="button" class="secondary" data-export-history="${esc(item.id)}">Exportar resultado (.json)</button>
+        </div>
+      </details>
+    `;
+    list.appendChild(article);
+  });
+
+  $('assembly-history-empty').style.display=sorted.length?'none':'block';
+
+  const from=sorted.length?start+1:0;
+  const to=Math.min(start+ASSEMBLY_HISTORY_PER_PAGE,sorted.length);
+  $('assembly-history-page-info').textContent=sorted.length
+    ? `Mostrando ${from}–${to} de ${sorted.length} · Página ${assemblyHistoryPage} de ${totalPages}`
+    : '0 mociones cerradas';
+
+  $('assembly-history-prev').disabled=assemblyHistoryPage<=1;
+  $('assembly-history-next').disabled=assemblyHistoryPage>=totalPages;
+
+  list.querySelectorAll('[data-export-history]').forEach(btn=>{
+    btn.addEventListener('click',()=>exportHistoryItem(btn.dataset.exportHistory));
+  });
+}
+
+function renderAssembly(){
+  const motion=selectedAssemblyMotion();
+  const activeMembersList=members.filter(m=>m.active);
+
+  const roster=$('assembly-roster');
+  roster.innerHTML='';
+
+  const tally=motion?assemblyTally(motion.id):{enabled:activeMembersList,votes:{},favor:0,contra:0,abstention:0,emitted:0,total:activeMembersList.length,affirmativePct:0};
+  const outcome=assemblyMotionOutcome(motion);
+
+  tally.enabled.forEach(member=>{
+    const alreadyVoted=motion?!!tally.votes[String(member.id)]:false;
+    const row=document.createElement('div');
+    row.className='assembly-roster-row';
+    row.innerHTML=`
+      <div>
+        <strong>${esc(member.name)}</strong>
+        <div class="muted">${esc(displayRoles(member).join(' · '))} · Habilitado</div>
+      </div>
+      <span class="state ${alreadyVoted?'voted':'pending'}">${motion?(alreadyVoted?'Voto emitido':'Pendiente'):'Habilitado'}</span>`;
+    roster.appendChild(row);
+  });
+  if(!tally.enabled.length)roster.innerHTML='<div class="muted">No hay socios habilitados.</div>';
+
+  const motionsBox=$('assembly-motions');
+  motionsBox.innerHTML='';
+
+  if(!ASSEMBLY_MOTIONS.length){
+    motionsBox.innerHTML='<div class="muted">No hay mociones abiertas. Podés crear una nueva arriba.</div>';
+    $('assembly-motion-rule').textContent='';
+    $('assembly-vote-title').textContent='Sin moción abierta';
+  }else{
+    ASSEMBLY_MOTIONS.forEach(item=>{
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className='motion-option'+(motion&&item.id===motion.id?' active':'');
+      btn.innerHTML=`<strong>${esc(item.title)}</strong><span class="motion-type ${item.type==='extraordinary'?'extraordinary':''}">${esc(item.typeLabel)}</span>`;
+      btn.addEventListener('click',()=>{
+        selectedAssemblyMotionId=item.id;
+        renderAssembly();
+      });
+      motionsBox.appendChild(btn);
+    });
+
+    $('assembly-motion-rule').textContent=motion.type==='extraordinary'
+      ? 'Mayoría requerida: al menos 66% de votos afirmativos sobre los socios habilitados.'
+      : 'Mayoría requerida: mayoría simple de votos afirmativos sobre los socios habilitados.';
+    $('assembly-vote-title').textContent=motion.title;
+  }
+
+  const voter=$('assembly-voter');
+  const previousVoter=voter.value;
+  voter.innerHTML='<option value="">— Seleccionar socio —</option>';
+  tally.enabled.forEach(member=>{
+    const option=document.createElement('option');
+    option.value=member.id;
+    option.textContent=member.name;
+    voter.appendChild(option);
+  });
+  if(previousVoter&&tally.enabled.some(m=>String(m.id)===String(previousVoter)))voter.value=previousVoter;
+
+  $('assembly-tally').innerHTML=`
+    <div class="tally-item"><span>Habilitados</span><strong>${tally.total}</strong></div>
+    <div class="tally-item"><span>Votos emitidos</span><strong>${tally.emitted}</strong></div>
+    <div class="tally-item"><span>A favor</span><strong>${tally.favor}</strong></div>
+    <div class="tally-item"><span>En contra</span><strong>${tally.contra}</strong></div>
+    <div class="tally-item"><span>Abstenciones</span><strong>${tally.abstention}</strong></div>`;
+
+  const result=$('assembly-result');
+  result.className='result-card'+(outcome.className?' '+outcome.className:'');
+  result.innerHTML=`<div class="result-title">${esc(outcome.status)}</div><div>${esc(outcome.detail)}</div>`;
+
+  $('add-result-to-minutes').disabled=!motion||!outcome.final;
+  $('export-motion-result').disabled=!motion;
+  $('close-motion').disabled=!motion||!outcome.final;
+
+  updateAssemblyVoteStatus();
+  renderAssemblyHistory();
+}
+
+function createAssemblyMotion(){
+  const title=$('new-motion-title').value.trim();
+  const type=$('new-motion-type').value;
+
+  if(!title){
+    notify('Ingresá un título para la moción.','error');
+    return;
+  }
+
+  if(ASSEMBLY_MOTIONS.some(m=>m.title.trim().toLowerCase()===title.toLowerCase())){
+    notify('Ya existe una moción abierta con ese título.','error');
+    return;
+  }
+
+  const motion={
+    id:`mocion-${Date.now()}`,
+    title,
+    type:type==='extraordinary'?'extraordinary':'ordinary',
+    typeLabel:type==='extraordinary'?'Moción extraordinaria':'Moción ordinaria',
+    openedAt:new Date().toISOString()
+  };
+
+  ASSEMBLY_MOTIONS.push(motion);
+  persistAssemblyMotions();
+  selectedAssemblyMotionId=motion.id;
+
+  $('new-motion-title').value='';
+  $('new-motion-type').value='ordinary';
+
+  renderAssembly();
+  notify('Moción creada y abierta para votación.');
+}
+
+function buildOpenMotionExport(motion){
+  const tally=assemblyTally(motion.id);
+  const outcome=assemblyMotionOutcome(motion);
+
+  const voteDetails=tally.enabled.map(member=>({
+    socio:member.name,
+    roles:displayRoles(member),
+    voto:tally.votes[String(member.id)]||'Pendiente'
+  }));
+
+  return{
+    mocion:{
+      id:motion.id,
+      titulo:motion.title,
+      tipo:motion.typeLabel,
+      mayoriaRequerida:motion.type==='extraordinary'
+        ? 'Al menos 66% de votos afirmativos sobre socios habilitados'
+        : 'Mayoría simple de votos afirmativos sobre socios habilitados'
+    },
+    resultado:{
+      estado:outcome.status,
+      detalle:outcome.detail,
+      sociosHabilitados:tally.total,
+      votosEmitidos:tally.emitted,
+      aFavor:tally.favor,
+      enContra:tally.contra,
+      abstenciones:tally.abstention,
+      porcentajeAfirmativo:Number((tally.affirmativePct*100).toFixed(2))
+    },
+    votos:voteDetails
+  };
+}
+
+function exportSelectedMotionResult(){
+  const motion=selectedAssemblyMotion();
+  if(!motion){
+    notify('No hay una moción abierta para exportar.','error');
+    return;
+  }
+
+  const data={
+    ...buildOpenMotionExport(motion),
+    exportadoEn:new Date().toISOString()
+  };
+
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const safeName=motion.title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/^-+|-+$/g,'')
+    .slice(0,60)||'mocion';
+
+  a.href=url;
+  a.download=`resultado-${safeName}.json`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  notify('Resultado de la moción exportado.');
+}
+
+function closeSelectedMotion(){
+  const motion=selectedAssemblyMotion();
+  if(!motion){
+    notify('No hay una moción abierta para cerrar.','error');
+    return;
+  }
+
+  const outcome=assemblyMotionOutcome(motion);
+  if(!outcome.final){
+    notify('La moción todavía está en votación. Deben votar todos los socios habilitados antes de cerrarla.','error');
+    return;
+  }
+
+  const snapshot=buildOpenMotionExport(motion);
+
+  // Snapshot inmutable: guarda exactamente el padrón y los votos
+  // existentes en el momento del cierre. Cambios posteriores en socios
+  // no modifican una moción histórica.
+  const frozenVotes=(snapshot.votos||[]).map(v=>({
+    socio:v.socio,
+    roles:Array.isArray(v.roles)?[...v.roles]:[],
+    voto:v.voto
+  }));
+
+  const historyEntry={
+    id:`hist-${motion.id}-${Date.now()}`,
+    closedAt:new Date().toISOString(),
+    motion:{
+      id:motion.id,
+      title:motion.title,
+      type:motion.type,
+      typeLabel:motion.typeLabel
+    },
+    result:{...snapshot.result},
+    electorate:frozenVotes.map(v=>({
+      socio:v.socio,
+      roles:[...v.roles]
+    })),
+    votes:frozenVotes
+  };
+
+  assemblyHistory.push(historyEntry);
+  persistAssemblyHistory();
+
+  ASSEMBLY_MOTIONS=ASSEMBLY_MOTIONS.filter(m=>m.id!==motion.id);
+  delete assemblyVotes[motion.id];
+
+  persistAssemblyMotions();
+  persistAssemblyVotes();
+
+  selectedAssemblyMotionId=ASSEMBLY_MOTIONS[0]?.id||'';
+  assemblyHistoryPage=1;
+
+  renderAssembly();
+  renderAssemblyHistory();
+  go('historial-asambleas');
+  notify('Moción cerrada y archivada en el historial.');
+}
+
+function castAssemblyVote(vote){
+  const motion=selectedAssemblyMotion();
+  if(!motion){
+    notify('No hay una moción abierta para votar.','error');
+    return;
+  }
+
+  const voterId=$('assembly-voter').value;
+  const box=$('assembly-vote-status');
+
+  if(!voterId){
+    box.textContent='Seleccioná un socio antes de emitir el voto.';
+    box.className='vote-status-box error';
+    return;
+  }
+
+  const member=members.find(m=>String(m.id)===String(voterId));
+  if(!member||!member.active){
+    box.textContent='El socio seleccionado no está habilitado para votar.';
+    box.className='vote-status-box error';
+    return;
+  }
+
+  const motionVotes=votesForMotion(motion.id);
+  const key=String(member.id);
+
+  if(motionVotes[key]){
+    box.textContent=`Su voto para esta moción ya fue registrado y contabilizado. ${member.name} no puede votar nuevamente.`;
+    box.className='vote-status-box error';
+    return;
+  }
+
+  motionVotes[key]=vote;
+  assemblyVotes[motion.id]=motionVotes;
+  persistAssemblyVotes();
+  renderAssembly();
+
+  const refreshed=$('assembly-vote-status');
+  refreshed.textContent=`Voto Emitido: ${member.name} seleccionó "${vote}". El voto fue registrado y el contador se actualizó.`;
+  refreshed.className='vote-status-box good';
+}
+
+function renderAll(){renderMembers();renderMemberSelect();updateMetrics();renderAssembly();renderAssemblyHistory();renderRoleSummary()}
 $('export-members').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(members,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='socios_coopgestion.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);notify('JSON de socios y roles exportado.')});
 $('import-members').addEventListener('change',async e=>{
   const file=e.target.files[0];
@@ -1146,6 +2500,38 @@ $('import-members').addEventListener('change',async e=>{
 });
 let hoursHistoryPage=1;
 const HOURS_PER_PAGE=5;
+
+
+function parseWorkDate(dateStr){
+  const parts=String(dateStr||'').split('/');
+  if(parts.length!==3)return null;
+  const [d,m,y]=parts.map(Number);
+  const date=new Date(y,m-1,d);
+  return Number.isNaN(date.getTime())?null:date;
+}
+
+function isSundayWorkDate(dateStr){
+  const date=parseWorkDate(dateStr);
+  return !!date&&date.getDay()===0;
+}
+
+function isConfiguredHoliday(dateStr){
+  const iso=workDateToIso(dateStr);
+  return !!iso&&retributionSettings.holidays.includes(iso);
+}
+
+function isSpecialWorkEntry(entry){
+  return isSundayWorkDate(entry?.date)||isConfiguredHoliday(entry?.date);
+}
+
+function specialDayLabel(entry){
+  const sunday=isSundayWorkDate(entry?.date);
+  const holiday=isConfiguredHoliday(entry?.date);
+  if(sunday&&holiday)return 'Domingo · Feriado nacional';
+  if(holiday)return 'Feriado nacional';
+  if(sunday)return 'Domingo';
+  return '';
+}
 
 function hourInitials(name){
   return String(name||'')
@@ -1214,7 +2600,10 @@ function renderHours(){
           <span class="hour-entry-name">${esc(h.name)}</span>
           <span class="hour-entry-hours">${Number(h.hours).toLocaleString('es-AR')} h</span>
         </div>
-        <div class="hour-entry-meta">${esc(h.date)}</div>
+        <div class="hour-entry-meta">
+          ${esc(h.date)}
+          ${isSpecialWorkEntry(h)?`<span class="special-day-badge">${esc(specialDayLabel(h))}</span>`:''}
+        </div>
         <div class="hour-entry-note">${esc(h.note||'Sin detalle')}</div>
       </div>
       <div class="hour-entry-actions">
@@ -1287,11 +2676,276 @@ function renderHoursValidation(){const v=hoursValidationState(),items=[[v.member
 ['hours-value','hours-date'].forEach(id=>$(id).addEventListener('input',renderHoursValidation));
 $('hours-member').addEventListener('change',renderHoursValidation);
 $('hours-form').addEventListener('submit',e=>{e.preventDefault();const name=$('hours-member').value,rawDate=$('hours-date').value,note=$('hours-note').value.trim();if(!name||!rawDate){notify('Completá socio y fecha.','error');return}const v=hoursValidationState();if(!v.memberOk){notify('No se pueden cargar horas a un usuario inactivo.','error');renderHoursValidation();return}if(!v.hoursOk){notify('La cantidad de horas ingresada es inválida. Debe ser un número positivo mayor a 0 y menor a 24.','error');renderHoursValidation();return}if(v.duplicate){notify('Ya se cargaron horas para ese socio en esa fecha. Corroborá la carga existente antes de continuar.','error');renderHoursValidation();return}hours.push({id:Date.now(),name,date:v.date,hours:v.val,note});persistHours();$('hours-note').value='';renderHours();updateMetrics();renderHoursValidation();notify('Trabajo registrado y guardado en el historial.')});
+
+function currentNormalRate(){
+  return Math.max(0,Number(retributionSettings.normalRate)||0);
+}
+
+function currentSpecialRate(){
+  return Math.max(0,Number(retributionSettings.specialRate)||0);
+}
+
+function formatIsoDate(iso){
+  const [y,m,d]=String(iso||'').split('-');
+  return y&&m&&d?`${d}/${m}/${y}`:iso;
+}
+
+function renderRetributionSettings(){
+  if(!$('normal-hour-rate'))return;
+
+  $('normal-hour-rate').value=currentNormalRate();
+  $('special-hour-rate').value=currentSpecialRate();
+  $('normal-rate-display').textContent=`${money(currentNormalRate())} / hora`;
+  $('special-rate-display').textContent=`${money(currentSpecialRate())} / hora`;
+  $('retribution-example').textContent=
+    `Ejemplo: 8 horas en un día habitual = ${money(8*currentNormalRate())}. `+
+    `8 horas en domingo o feriado nacional = ${money(8*currentSpecialRate())}.`;
+
+  const list=$('holiday-list');
+  list.className='holiday-list';
+  list.innerHTML='';
+
+  if(!retributionSettings.holidays.length){
+    list.innerHTML='<div class="muted">Todavía no hay feriados cargados.</div>';
+    return;
+  }
+
+  retributionSettings.holidays.forEach(iso=>{
+    const row=document.createElement('div');
+    row.className='holiday-row';
+    row.innerHTML=`
+      <div>
+        <strong>${esc(formatIsoDate(iso))}</strong>
+        <div class="helper">Feriado nacional</div>
+      </div>
+      <button type="button" class="danger-btn" data-remove-holiday="${esc(iso)}">Eliminar</button>
+    `;
+    list.appendChild(row);
+  });
+
+  list.querySelectorAll('[data-remove-holiday]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      retributionSettings.holidays=retributionSettings.holidays.filter(d=>d!==btn.dataset.removeHoliday);
+      persistRetributionSettings();
+      renderRetributionSettings();
+      renderHours();
+      renderRetributions();
+      notify('Feriado eliminado. Se recalcularon las retribuciones.');
+    });
+  });
+}
+
+function calculateMemberRetribution(memberName){
+  const entries=hours.filter(h=>h.name===memberName);
+  let normalHours=0;
+  let specialHours=0;
+
+  entries.forEach(entry=>{
+    const qty=Number(entry.hours)||0;
+    if(isSpecialWorkEntry(entry))specialHours+=qty;
+    else normalHours+=qty;
+  });
+
+  const normalAmount=normalHours*currentNormalRate();
+  const specialAmount=specialHours*currentSpecialRate();
+
+  return{
+    memberName,
+    normalHours,
+    specialHours,
+    normalAmount,
+    specialAmount,
+    total:normalAmount+specialAmount,
+    entries:entries.length
+  };
+}
+
+function renderRetributions(){
+  const list=$('retribution-list');
+  const empty=$('retribution-empty');
+  if(!list||!empty)return;
+
+  renderRetributionSettings();
+
+  const calculations=members
+    .filter(m=>m.active)
+    .map(m=>calculateMemberRetribution(m.name))
+    .filter(x=>x.entries>0);
+
+  list.innerHTML='';
+  empty.style.display=calculations.length?'none':'block';
+
+  calculations.forEach(calc=>{
+    const transferredAmount=Number(retributionTransfers[calc.memberName]||0);
+    const transferred=calc.total>0&&transferredAmount===calc.total;
+
+    const card=document.createElement('article');
+    card.className='retribution-card';
+    card.innerHTML=`
+      <div class="retribution-card-head">
+        <div>
+          <h3>${esc(calc.memberName)}</h3>
+          <div class="muted">${calc.entries} registro(s) de trabajo en el período</div>
+        </div>
+        <span class="badge ${transferred?'':'pending'}">${transferred?'Transferida':'Pendiente de transferencia'}</span>
+      </div>
+
+      <div class="retribution-breakdown">
+        <div>
+          <span>Horas habituales</span>
+          <strong>${calc.normalHours.toLocaleString('es-AR')} h</strong>
+          <div class="helper">${money(calc.normalAmount)}</div>
+        </div>
+        <div>
+          <span>Domingos / feriados</span>
+          <strong>${calc.specialHours.toLocaleString('es-AR')} h</strong>
+          <div class="helper">${money(calc.specialAmount)}</div>
+        </div>
+        <div>
+          <span>Total de horas</span>
+          <strong>${(calc.normalHours+calc.specialHours).toLocaleString('es-AR')} h</strong>
+          <div class="helper">Período actual</div>
+        </div>
+      </div>
+
+      <div class="retribution-total">
+        <div>
+          <div class="muted">Retribución total</div>
+          <div class="amount">${money(calc.total)}</div>
+        </div>
+        ${transferred
+          ? '<span class="badge">Transferencia registrada</span>'
+          : `<button type="button" class="primary" data-register-transfer="${esc(calc.memberName)}">Registrar transferencia</button>`
+        }
+      </div>
+    `;
+    list.appendChild(card);
+  });
+
+  list.querySelectorAll('[data-register-transfer]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const memberName=btn.dataset.registerTransfer;
+      const calc=calculateMemberRetribution(memberName);
+      if(calc.total<=0){
+        notify('No hay una retribución válida para transferir.','error');
+        return;
+      }
+      retributionTransfers[memberName]=calc.total;
+      persistRetributionTransfers();
+      renderRetributions();
+      notify(`Transferencia registrada para ${memberName} por ${money(calc.total)}.`);
+    });
+  });
+}
+
+function updateRetributionRates(){
+  retributionSettings.normalRate=Math.max(0,Number($('normal-hour-rate').value)||0);
+  retributionSettings.specialRate=Math.max(0,Number($('special-hour-rate').value)||0);
+  persistRetributionSettings();
+  renderRetributions();
+}
+
+$('normal-hour-rate').addEventListener('change',()=>{
+  updateRetributionRates();
+  notify('Valor de hora habitual actualizado.');
+});
+
+$('special-hour-rate').addEventListener('change',()=>{
+  updateRetributionRates();
+  notify('Valor de hora especial actualizado.');
+});
+
+$('add-holiday').addEventListener('click',()=>{
+  const iso=$('holiday-date').value;
+
+  if(!iso){
+    notify('Seleccioná una fecha para agregar el feriado.','error');
+    return;
+  }
+
+  if(retributionSettings.holidays.includes(iso)){
+    notify('Ese feriado ya está cargado.','error');
+    return;
+  }
+
+  retributionSettings.holidays.push(iso);
+  retributionSettings.holidays.sort();
+  persistRetributionSettings();
+  $('holiday-date').value='';
+  renderRetributionSettings();
+  renderHours();
+  renderRetributions();
+  notify('Feriado agregado. Se recalcularon las retribuciones.');
+});
+
+$('refresh-retributions').addEventListener('click',()=>{
+  renderRetributions();
+  notify('Liquidación actualizada.');
+});
+
+
 function renderFinance(){const body=$('finance-body');body.innerHTML='';let inc=0,exp=0;movements.forEach(m=>{if(m.type==='Ingreso')inc+=m.amount;else exp+=m.amount;const tr=document.createElement('tr');tr.innerHTML=`<td>${m.type}</td><td><strong>${esc(m.concept)}</strong></td><td>${money(m.amount)}</td>`;body.appendChild(tr)});$('income-total').textContent=money(inc);$('expense-total').textContent=money(exp);$('finance-balance').textContent=money(Math.max(0,inc-exp));$('metric-balance').textContent=money(Math.max(0,inc-exp))}
 $('finance-form').addEventListener('submit',e=>{e.preventDefault();const type=$('finance-type').value,concept=$('finance-concept').value.trim(),amount=Math.max(0,Number($('finance-amount').value)||0);if(!concept||amount<=0){notify('Completá un concepto y un monto válido.','error');return}movements.push({type,concept,amount});e.target.reset();renderFinance();notify(type+' registrado.')});
 $('calculate-distribution').addEventListener('click',()=>{const total=Math.max(0,Number($('distribution-total').value)||0),active=members.filter(m=>m.active),byName={};hours.forEach(h=>byName[h.name]=(byName[h.name]||0)+h.hours);const totalHours=active.reduce((s,m)=>s+(byName[m.name]||0),0),box=$('distribution-results');box.innerHTML='';if(total<=0||totalHours<=0){notify('No hay monto u horas suficientes para calcular.','error');return}active.forEach(m=>{const h=byName[m.name]||0,share=total*(h/totalHours),card=document.createElement('div');card.className='card';card.innerHTML=`<strong>${esc(m.name)}</strong><div class="muted">${h} h registradas</div><div class="metric">${money(Math.round(share))}</div>`;box.appendChild(card)});notify('Simulación actualizada.')});
-$('fund-movement').addEventListener('click',()=>$('fund-note').classList.toggle('hidden'));document.querySelectorAll('.vote-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.vote-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');$('vote-result').textContent='Voto de prueba registrado: '+btn.dataset.vote+'.'}));$('save-minutes').addEventListener('click',()=>{const t=$('minutes-text').value.trim();notify(t?'Borrador de acta guardado.':'Escribí alguna decisión antes de guardar.',t?'ok':'error')});
-updateCapitalPreview();renderAll();renderHours();renderFinance();renderHoursValidation();
+$('fund-movement').addEventListener('click',()=>$('fund-note').classList.toggle('hidden'));$('create-motion').addEventListener('click',createAssemblyMotion);
+$('close-motion').addEventListener('click',closeSelectedMotion);
+$('assembly-history-prev').addEventListener('click',()=>{
+  if(assemblyHistoryPage>1){
+    assemblyHistoryPage--;
+    renderAssemblyHistory();
+  }
+});
+$('assembly-history-next').addEventListener('click',()=>{
+  const totalPages=Math.max(1,Math.ceil(assemblyHistory.length/ASSEMBLY_HISTORY_PER_PAGE));
+  if(assemblyHistoryPage<totalPages){
+    assemblyHistoryPage++;
+    renderAssemblyHistory();
+  }
+});
+$('export-motion-result').addEventListener('click',exportSelectedMotionResult);
+
+document.querySelectorAll('.assembly-vote-btn').forEach(btn=>btn.addEventListener('click',()=>castAssemblyVote(btn.dataset.vote)));
+$('assembly-voter').addEventListener('change',updateAssemblyVoteStatus);
+$('add-result-to-minutes').addEventListener('click',()=>{
+  const motion=selectedAssemblyMotion();
+  if(!motion){
+    notify('No hay una moción abierta.','error');
+    return;
+  }
+  const outcome=assemblyMotionOutcome(motion);
+  if(!outcome.final){
+    notify('La moción todavía está en votación.','error');
+    return;
+  }
+  const tally=assemblyTally(motion.id);
+  const line=`${motion.title}: ${outcome.status}. A favor: ${tally.favor}, En contra: ${tally.contra}, Abstenciones: ${tally.abstention}. ${outcome.detail}`;
+  const textarea=$('minutes-text');
+  if(!textarea.value.includes(line)){
+    textarea.value=(textarea.value.trim()?textarea.value.trim()+'\n\n':'')+line;
+    persistAssemblyMinutesDraft(textarea.value);
+  }
+  notify('Resultado incorporado y guardado en el borrador del acta.');
+});$('save-minutes').addEventListener('click',()=>{
+  const textarea=$('minutes-text');
+  const textValue=textarea.value.trim();
+
+  if(!textValue){
+    notify('Escribí alguna decisión antes de guardar.','error');
+    return;
+  }
+
+  persistAssemblyMinutesDraft(textarea.value);
+  notify('Borrador de acta guardado correctamente.');
+});
+updateCapitalPreview();
+$('minutes-text').value=loadAssemblyMinutesDraft();
+renderAll();
+renderAssemblyHistory();
+renderHours();
+renderRetributionSettings();
+renderRetributions();
+renderFinance();
+renderHoursValidation();
 })();
 </script>
 </body></html>
