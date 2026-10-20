@@ -8,234 +8,135 @@
 - Paz Blanco, Pilar 105600
 - Chen, Michelle Melisa 105506
 
-## Aplicación para Cooperativas 
-Este es un prototipo web desarrollado para facilitar la administración de una cooperativa de trabajo.
+## Cooperativa — Administrador + Asociado + PostgreSQL
 
-El proyecto surge a partir del relevamiento de necesidades realizado mediante entrevistas a una cooperativa y fue evolucionando de forma iterativa. En esta instancia se incorporaron y profundizaron funcionalidades a partir de las reglas, ejemplos y casos definidos mediante **Example Mapping y BDD (Behavior Driven Development)**.
+Esta versión reemplaza el login y los datos compartidos en `localStorage` por un backend real con **Node.js + Express + PostgreSQL**.
 
-El objetivo es representar de manera sencilla algunos de los procesos cotidianos de una cooperativa: 
-- Gestión de asociados (alta/baja de socios) 
-- Registro de trabajo (horas de trabajo de cada socio)
-- Liquidación de retribuciones
-- Administración de autoridades
-- Toma de decisiones colectivas (asambleas).
+## Qué queda guardado en la base
 
-## Funcionalidades implementadas
+El archivo `sql/schema.sql` crea, entre otras, las tablas:
 
-### Gestión de socios
+- `members`: socios, capital y estado de monotributo.
+- `users`: usuarios de inicio de sesión vinculados a un socio mediante `member_id`.
+- `authorities`: Presidente, Secretario y Tesorero.
+- `work_logs`: cargas de horas. Tiene `UNIQUE(member_id, work_date)`.
+- `retribution_settings`: valor de hora habitual y especial.
+- `holidays`: feriados globales.
+- `retribution_transfers`: transferencias registradas.
+- `motions`: mociones ordinarias y extraordinarias.
+- `votes`: votos. Su PK `(motion_id, member_id)` implementa **1 socio = 1 voto por moción**.
+- `minutes_drafts`: borrador de acta.
+- `financial_movements` y `fund_movements`: estructura preparada para migrar también finanzas y fondos.
 
-El sistema permite registrar y administrar los asociados de la cooperativa.
+## Usuarios demo
 
-Para realizar un alta se solicitan:
+Se crean desde SQL y las contraseñas se guardan hasheadas con `pgcrypto`.
 
-- Nombre y apellido.
-- DNI.
-- CUIT.
-- Correo electrónico.
-- Capital social suscripto.
-- Aporte inicial integrado.
-- Constancia de monotributo en PDF.
+- Administrador: `admin` / `admin`
+- Asociado Ana Gómez: `ana` / `1234`
+- Asociado Juan Pérez: `juan` / `1234`
+- Asociada María Ríos: `maria` / `1234`
 
-Se incorporaron distintas validaciones sobre estos datos:
+Carlos se deja pendiente/no habilitado para representar el flujo de verificación.
 
-- DNI compuesto únicamente por números.
-- CUIT con formato válido.
-- El CUIT no puede encontrarse duplicado entre los socios existentes.
-- Si el CUIT pertenece a un exsocio, el sistema propone reincorporar el registro existente en lugar de generar uno nuevo.
-- El aporte inicial debe representar como mínimo el 5% del capital social suscripto.
+## Opción recomendada: ejecutar todo con Docker
 
-Los nuevos asociados quedan inicialmente pendientes de verificación y no son considerados socios activos hasta completar el proceso correspondiente.
+Con Docker Desktop instalado:
 
-También se cuenta con búsqueda, filtros y paginación para facilitar la consulta del padrón.
+```bash
+docker compose up --build
+```
 
+Luego abrir:
 
+```text
+http://localhost:3000
+```
 
-## Verificación de monotributo
+La base PostgreSQL queda en el volumen `coopgestion_pgdata` y los datos sobreviven al reinicio de los contenedores.
 
-Durante el alta debe adjuntarse una constancia de monotributo en formato PDF.
+Para borrar la base y volver a ejecutar los seeds:
 
-Como mejora de esta instancia se incorporó una **verificación automática del documento**.
+```bash
+docker compose down -v
+docker compose up --build
+```
 
-El sistema analiza el contenido textual del PDF y verifica:
+## Ejecutarlo sin Docker
 
-1. Que el documento contenga información compatible con una constancia de monotributo.
-2. Que el CUIT encontrado dentro del documento coincida con el CUIT ingresado para el asociado.
+1. Crear una base PostgreSQL llamada `coopgestion`.
+2. Ejecutar `sql/schema.sql` sobre esa base.
+3. Copiar `.env.example` a `.env` y ajustar `DATABASE_URL`.
+4. Ejecutar:
 
-Si ambas condiciones se cumplen, la verificación automática se considera satisfactoria.
+```bash
+npm install
+npm start
+```
 
-Luego de este control, la constancia continúa en estado **Pendiente de revisión**, ya que la habilitación definitiva del asociado corresponde a una revisión administrativa.
+5. Abrir `http://localhost:3000`.
 
-> Esta funcionalidad forma parte del prototipo y no realiza una validación oficial contra servicios externos como ARCA.
+## Flujo para probar la sincronización
 
+1. Abrir una ventana normal y entrar con `admin / admin`.
+2. Abrir otra ventana o navegador y entrar con `ana / 1234`.
+3. Como Ana, entrar en **Mis horas** y registrar una carga.
+4. Volver a Administración → **Trabajo**. La carga aparece desde PostgreSQL.
+5. Como Administrador, crear una moción.
+6. Como Ana, entrar en **Asamblea** y votar.
+7. Volver a Administración → **Asamblea**. El cómputo refleja el voto.
 
-## Estados de los asociados
+La interfaz consulta de nuevo al backend cada pocos segundos, por lo que también funciona entre dispositivos distintos siempre que ambos puedan acceder al mismo backend.
 
-Los asociados pueden encontrarse en distintos estados:
+## Arquitectura
 
-- **Pendiente de verificación:** fue registrado pero todavía no fue habilitado.
-- **Activo:** puede participar de las distintas funcionalidades de la cooperativa.
-- **Baja:** permanece registrado en el sistema pero no participa de las operaciones actuales.
+```text
+Navegador Administrador ─┐
+                         ├── HTTP/JSON ──> Node + Express ──> PostgreSQL
+Navegador Asociado ──────┘
+```
 
-Los asociados pendientes o dados de baja no pueden registrar horas, ocupar autoridades ni participar de las votaciones.
+El frontend ya no conoce la contraseña de PostgreSQL. Solo habla con la API.
 
+## Deploy posterior
 
-## Autoridades de la cooperativa
+Para acceder desde cualquier dispositivo por Internet hay que desplegar **la app/backend y PostgreSQL** en un servicio online. GitHub Pages por sí solo no ejecuta Node ni PostgreSQL.
 
-El sistema contempla los siguientes cargos:
+En producción también hay que cambiar `JWT_SECRET`, usar HTTPS y configurar `FRONTEND_ORIGIN` con el dominio real.
 
-- Presidente
-- Secretario
-- Tesorero
+## Nota sobre la entrega anterior
 
-Estos cargos deben permanecer asignados.
+Esta versión backend migra los módulos que necesitan datos compartidos entre roles: login/usuarios, socios, horas, retribuciones, feriados, mociones, votos e historial. El esquema ya deja preparadas tablas para movimientos financieros y fondos; esas pantallas pueden conectarse a la API en una iteración siguiente.
 
-De acuerdo con las reglas relevadas:
+La versión restaurada conserva también Ingresos y gastos, Retiros y excedentes y Fondos en la vista Administrador.
 
-- El Presidente puede ocupar además Secretaría y/o Tesorería.
-- Un asociado que no sea Presidente no puede acumular más de un cargo especial.
-- Cuando se cambia una autoridad, se debe seleccionar inmediatamente al nuevo responsable para evitar que el cargo quede vacante.
 
-Los asociados que no ocupan alguno de estos cargos mantienen el rol general de **Asociado**.
+## Constancia de monotributo: almacenamiento real
 
-## Registro de trabajo
+La constancia ya no se guarda solamente como nombre de archivo en `members.monotributo_file`.
+Los PDFs cargados en nuevas altas o reincorporaciones se almacenan en PostgreSQL en
+`member_documents.content` (`BYTEA`), junto con nombre, MIME type, tamaño, fecha y el
+resultado de la verificación automática. El límite del prototipo es 5 MB por PDF.
 
-El módulo de Trabajo permite registrar las horas realizadas por cada asociado activo.
+La tabla `members` conserva `monotributo_file` y los flags de estado como resumen rápido.
+`member_documents` conserva el documento real y permite mantener historial cuando se carga
+una nueva constancia en una reincorporación.
 
-Cada registro incluye:
+El Administrador puede descargar la última constancia desde el detalle del socio y el
+asociado puede descargar su propia constancia desde Mi perfil.
 
-- Asociado.
-- Fecha.
-- Cantidad de horas.
-- Descripción de la tarea realizada.
+Para comprobarlo directamente en PostgreSQL:
 
-Se aplican las siguientes reglas:
+```sql
+SELECT id, member_id, document_type, file_name, mime_type, file_size,
+       auto_verified, cuit_matched, uploaded_at
+FROM member_documents
+ORDER BY uploaded_at DESC;
+```
 
-- Solo se pueden cargar horas a asociados activos.
-- La cantidad de horas debe ser mayor a 0 y menor a 24 por día.
-- No puede existir más de una carga para el mismo asociado en la misma fecha.
+No conviene hacer `SELECT content` en la consola porque el `BYTEA` puede ser muy grande.
 
-El historial permite buscar y filtrar registros, consultar el total de horas y eliminar cargas incorrectas.
-
-
-## Liquidación de retribuciones
-
-A partir de las reglas trabajadas en Example Mapping se incorporó un módulo para calcular las retribuciones de los asociados según las horas registradas.
-
-La liquidación distingue entre:
-
-- **Horas habituales.**
-- **Horas trabajadas en domingos o feriados nacionales.**
-
-Como valores iniciales del ejemplo se utilizaron:
-
-- Día habitual: `$10.000` por hora.
-- Domingo o feriado nacional: `$15.000` por hora.
-
-Estos valores pueden modificarse desde la configuración de la liquidación.
-
-Los domingos se reconocen automáticamente por la fecha y los feriados nacionales se configuran de manera global para toda la cooperativa. De esta forma, si una fecha es marcada como feriado, la tarifa especial se aplica de manera consistente a todos los asociados que hayan trabajado ese día.
-
-El sistema calcula para cada asociado:
-
-- Horas habituales.
-- Horas especiales.
-- Importe correspondiente a cada tipo.
-- Retribución total.
-
-Finalmente, permite registrar la transferencia de la retribución.
-
-
-## Asamblea y votación de propuestas
-
-El módulo de Asamblea implementa algunas de las reglas definidas mediante Example Mapping para la toma de decisiones colectivas.
-
-### Creación de mociones
-
-Se pueden crear nuevas mociones indicando:
-
-- Título.
-- Tipo de moción:
-  - Ordinaria.
-  - Extraordinaria.
-
-Mientras una moción se encuentra abierta aparece disponible para votación.
-
-### Unicidad del voto
-
-Se aplica la regla:
-
-> **1 socio = 1 voto**
-
-Cada asociado activo y habilitado puede emitir un único voto por moción.
-
-Las opciones disponibles son:
-
-- A favor.
-- En contra.
-- Abstención.
-
-Una vez emitido el voto, queda registrado y no puede volver a modificarse ni emitirse nuevamente para esa misma moción.
-
-### Cómputo de resultados
-
-El sistema actualiza automáticamente:
-
-- Cantidad de socios habilitados.
-- Votos emitidos.
-- Votos a favor.
-- Votos en contra.
-- Abstenciones.
-
-Para las mociones ordinarias se utiliza mayoría simple.
-
-Para las mociones extraordinarias se aplica la regla definida en el Example Mapping: al menos **66% de votos afirmativos**.
-
-Una vez finalizada la votación, el sistema determina si la moción fue:
-
-- **APROBADA**
-- **RECHAZADA**
-
-## Cierre e historial de asambleas
-
-Una vez finalizada una votación, la moción puede cerrarse.
-
-Al hacerlo:
-
-- deja de aparecer entre las mociones abiertas;
-- se guarda el resultado final;
-- se conserva el padrón de socios habilitados en ese momento;
-- se almacenan los votos emitidos;
-- se registra la fecha y hora de cierre.
-
-Las mociones cerradas se trasladan al apartado independiente **Historial de asambleas**, accesible desde el menú lateral.
-
-El historial se encuentra ordenado desde las mociones más recientes hacia las más antiguas y utiliza paginación para evitar una interfaz excesivamente extensa.
-
-Es importante que una moción cerrada funcione como un registro histórico. Por este motivo, modificaciones posteriores en los asociados —por ejemplo altas, bajas o reincorporaciones— no alteran el padrón ni los votos de una asamblea ya finalizada.
-
-También es posible consultar sus detalles y exportar el resultado en formato JSON.
-
-## Actas
-
-Dentro de Asamblea se dispone de un espacio para registrar acuerdos y decisiones.
-
-El sistema permite:
-
-- redactar un borrador del acta;
-- incorporar automáticamente el resultado de una moción finalizada;
-- guardar el borrador.
-
-El contenido se almacena localmente para evitar perderlo al actualizar o volver a ingresar a la aplicación.
-
-
-## Otras funcionalidades
-
-El prototipo mantiene además los módulos iniciales de:
-
-- Registro de ingresos y gastos.
-- Anticipos de retiro y excedentes.
-- Fondos de la cooperativa.
-- Resumen general de información.
-
-Estas funcionalidades forman parte de la estructura general relevada inicialmente y continuarán evolucionando en futuras iteraciones.
-
+La aplicación ejecuta una migración `CREATE TABLE IF NOT EXISTS member_documents` al
+arrancar, por lo que esta corrección funciona incluso si conservás el volumen de PostgreSQL
+anterior. Los socios demo creados antes de esta versión pueden tener solamente el nombre
+histórico del archivo; el PDF real aparecerá para nuevas altas/reincorporaciones.

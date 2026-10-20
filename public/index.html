@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CoopGestión</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <section id="login-screen" class="login-screen">
+    <div class="login-card">
+      <div class="brand"><div class="brand-icon">C</div><div><h1>CoopGestión</h1><div class="muted">Acceso al sistema</div></div></div>
+      <form id="login-form" class="login-form">
+        <label>Usuario<input id="login-user" autocomplete="username" placeholder="Ej. ana" required></label>
+        <label>Contraseña<input id="login-password" type="password" autocomplete="current-password" required></label>
+        <button class="primary" type="submit">Iniciar sesión</button>
+      </form>
+      <div id="login-error" class="login-error"></div>
+      <div class="demo"><strong>Usuarios de prueba guardados en PostgreSQL</strong><br>Administrador: <b>admin / admin</b><br>Asociado: <b>ana / 1234</b></div>
+    </div>
+  </section>
+
+  <main id="app" class="app hidden">
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand"><div class="brand-icon">C</div><div><strong>CoopGestión</strong><div id="sidebar-subtitle" class="helper"></div></div></div>
+        <nav id="nav" class="nav"></nav>
+      </aside>
+      <section class="content">
+        <div class="topbar">
+          <div><div id="eyebrow" class="eyebrow">Cooperativa de Trabajo</div><h1 id="page-title"></h1></div>
+          <div class="user"><div id="user-avatar" class="avatar">A</div><div><strong id="user-name"></strong><small id="user-role" class="muted"></small></div></div>
+        </div>
+        <div id="status" class="status"></div>
+
+        <section id="admin-inicio" class="panel"></section>
+        <section id="admin-socios" class="panel"></section>
+        <section id="admin-trabajo" class="panel"></section>
+        <section id="admin-retribuciones" class="panel"></section>
+        <section id="admin-finanzas" class="panel"></section>
+        <section id="admin-retiros" class="panel"></section>
+        <section id="admin-fondos" class="panel"></section>
+        <section id="admin-asamblea" class="panel"></section>
+        <section id="admin-historial" class="panel"></section>
+
+        <section id="assoc-inicio" class="panel"></section>
+        <section id="assoc-perfil" class="panel"></section>
+        <section id="assoc-horas" class="panel"></section>
+        <section id="assoc-retribucion" class="panel"></section>
+        <section id="assoc-asamblea" class="panel"></section>
+      </section>
+    </div>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}</script>
+<script src="/app.js"></script>
+</body>
+</html>
