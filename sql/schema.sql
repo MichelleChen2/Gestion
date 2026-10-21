@@ -132,12 +132,47 @@ CREATE TABLE IF NOT EXISTS fund_movements (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS subscription_settings (
+  singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (singleton = TRUE),
+  plan VARCHAR(20) NOT NULL DEFAULT 'free' CHECK (plan IN ('free','pro')),
+  max_members INTEGER NOT NULL DEFAULT 5,
+  price_per_month NUMERIC(14,2) NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS surplus_distributions (
+  id BIGSERIAL PRIMARY KEY,
+  period_label VARCHAR(100) NOT NULL,
+  total_surplus NUMERIC(14,2) NOT NULL CHECK (total_surplus > 0),
+  reserve_legal_amount NUMERIC(14,2) NOT NULL CHECK (reserve_legal_amount >= 0),
+  education_fund_amount NUMERIC(14,2) NOT NULL CHECK (education_fund_amount >= 0),
+  assistance_fund_amount NUMERIC(14,2) NOT NULL CHECK (assistance_fund_amount >= 0),
+  distributable_amount NUMERIC(14,2) NOT NULL CHECK (distributable_amount >= 0),
+  total_hours NUMERIC(10,1) NOT NULL CHECK (total_hours >= 0),
+  status VARCHAR(20) NOT NULL DEFAULT 'closed' CHECK (status IN ('draft','closed')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS surplus_distribution_items (
+  id BIGSERIAL PRIMARY KEY,
+  distribution_id BIGINT NOT NULL REFERENCES surplus_distributions(id) ON DELETE CASCADE,
+  member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE RESTRICT,
+  hours NUMERIC(10,1) NOT NULL CHECK (hours >= 0),
+  percentage NUMERIC(6,3) NOT NULL CHECK (percentage >= 0 AND percentage <= 100),
+  return_amount NUMERIC(14,2) NOT NULL CHECK (return_amount >= 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 INSERT INTO retribution_settings(singleton, normal_rate, special_rate)
 VALUES (TRUE, 10000, 15000)
 ON CONFLICT (singleton) DO NOTHING;
 
 INSERT INTO minutes_drafts(singleton, content)
 VALUES (TRUE, '')
+ON CONFLICT (singleton) DO NOTHING;
+
+INSERT INTO subscription_settings(singleton, plan, max_members, price_per_month)
+VALUES (TRUE, 'free', 5, 0)
 ON CONFLICT (singleton) DO NOTHING;
 
 -- Datos demo equivalentes al prototipo actual.

@@ -22,14 +22,21 @@
 
   <main id="app" class="app hidden">
     <div class="layout">
-      <aside class="sidebar">
+      <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+      <aside id="sidebar" class="sidebar">
         <div class="brand"><div class="brand-icon">C</div><div><strong>CoopGestión</strong><div id="sidebar-subtitle" class="helper"></div></div></div>
         <nav id="nav" class="nav"></nav>
       </aside>
       <section class="content">
         <div class="topbar">
-          <div><div id="eyebrow" class="eyebrow">Cooperativa de Trabajo</div><h1 id="page-title"></h1></div>
-          <div class="user"><div id="user-avatar" class="avatar">A</div><div><strong id="user-name"></strong><small id="user-role" class="muted"></small></div></div>
+          <div class="topbar-left">
+            <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Abrir menú">☰</button>
+            <div><div id="eyebrow" class="eyebrow">Cooperativa de Trabajo</div><h1 id="page-title"></h1></div>
+          </div>
+          <div class="topbar-right">
+            <div id="topbar-plan"></div>
+            <div class="user"><div id="user-avatar" class="avatar">A</div><div class="user-details"><span id="user-name" class="user-name"></span><span id="user-role" class="user-role"></span></div></div>
+          </div>
         </div>
         <div id="status" class="status"></div>
 
@@ -42,6 +49,7 @@
         <section id="admin-fondos" class="panel"></section>
         <section id="admin-asamblea" class="panel"></section>
         <section id="admin-historial" class="panel"></section>
+        <section id="admin-suscripcion" class="panel"></section>
 
         <section id="assoc-inicio" class="panel"></section>
         <section id="assoc-perfil" class="panel"></section>

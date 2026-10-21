@@ -36,6 +36,41 @@ async function ensureRuntimeSchema() {
     );
     CREATE INDEX IF NOT EXISTS member_documents_member_type_idx
       ON member_documents(member_id, document_type, uploaded_at DESC);
+
+    CREATE TABLE IF NOT EXISTS subscription_settings (
+      singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (singleton = TRUE),
+      plan VARCHAR(20) NOT NULL DEFAULT 'free' CHECK (plan IN ('free','pro')),
+      max_members INTEGER NOT NULL DEFAULT 5,
+      price_per_month NUMERIC(14,2) NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    INSERT INTO subscription_settings(singleton, plan, max_members, price_per_month)
+    VALUES (TRUE, 'free', 5, 0)
+    ON CONFLICT (singleton) DO NOTHING;
+
+    CREATE TABLE IF NOT EXISTS surplus_distributions (
+      id BIGSERIAL PRIMARY KEY,
+      period_label VARCHAR(100) NOT NULL,
+      total_surplus NUMERIC(14,2) NOT NULL CHECK (total_surplus > 0),
+      reserve_legal_amount NUMERIC(14,2) NOT NULL CHECK (reserve_legal_amount >= 0),
+      education_fund_amount NUMERIC(14,2) NOT NULL CHECK (education_fund_amount >= 0),
+      assistance_fund_amount NUMERIC(14,2) NOT NULL CHECK (assistance_fund_amount >= 0),
+      distributable_amount NUMERIC(14,2) NOT NULL CHECK (distributable_amount >= 0),
+      total_hours NUMERIC(10,1) NOT NULL CHECK (total_hours >= 0),
+      status VARCHAR(20) NOT NULL DEFAULT 'closed' CHECK (status IN ('draft','closed')),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS surplus_distribution_items (
+      id BIGSERIAL PRIMARY KEY,
+      distribution_id BIGINT NOT NULL REFERENCES surplus_distributions(id) ON DELETE CASCADE,
+      member_id BIGINT NOT NULL REFERENCES members(id) ON DELETE RESTRICT,
+      hours NUMERIC(10,1) NOT NULL CHECK (hours >= 0),
+      percentage NUMERIC(6,3) NOT NULL CHECK (percentage >= 0 AND percentage <= 100),
+      return_amount NUMERIC(14,2) NOT NULL CHECK (return_amount >= 0),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
 }
 
@@ -261,6 +296,47 @@ async function ensureAssociateUser(client, memberId, username, password, display
   }
 }
 
+async function getSubscriptionSettings(clientOrPool) {
+  const subRes = await clientOrPool.query('SELECT plan, max_members, price_per_month, updated_at FROM subscription_settings WHERE singleton = TRUE');
+  return subRes.rows[0] || { plan: 'free', max_members: 5, price_per_month: 0 };
+}
+
+async function assertMemberQuotaAvailable(clientOrPool, actionDescription) {
+  const sub = await getSubscriptionSettings(clientOrPool);
+  if (sub.plan === 'free') {
+    const countRes = await clientOrPool.query('SELECT COUNT(*) AS total FROM members WHERE active = TRUE OR verification_pending = TRUE');
+    const currentTotal = Number(countRes.rows[0]?.total || 0);
+    if (currentTotal >= Number(sub.max_members || 5)) {
+      const error = new Error(`Límite del Plan Semilla alcanzado (${sub.max_members} asociados). Actualizá al Plan Profesional para ${actionDescription}.`);
+      error.statusCode = 403;
+      throw error;
+    }
+  }
+  return sub;
+}
+
+function calculateSurplusBreakdown(totalSurplus) {
+  const reserveLegal = Math.round(totalSurplus * 0.05 * 100) / 100;
+  const educationFund = Math.round(totalSurplus * 0.05 * 100) / 100;
+  const assistanceFund = Math.round(totalSurplus * 0.05 * 100) / 100;
+  const totalFunds = Math.round((reserveLegal + educationFund + assistanceFund) * 100) / 100;
+  const distributable = Math.round((totalSurplus - totalFunds) * 100) / 100;
+  return { reserveLegal, educationFund, assistanceFund, totalFunds, distributable };
+}
+
+async function getActiveMembersWorkSummary(clientOrPool) {
+  const membersRes = await clientOrPool.query(`
+    SELECT m.id, m.full_name, m.dni, m.cuit,
+           COALESCE(SUM(w.hours), 0)::float8 AS total_hours
+    FROM members m
+    LEFT JOIN work_logs w ON w.member_id = m.id
+    WHERE m.active = TRUE
+    GROUP BY m.id, m.full_name, m.dni, m.cuit
+    ORDER BY total_hours DESC, m.full_name ASC
+  `);
+  return membersRes.rows;
+}
+
 app.post('/api/members', auth, requireRole('admin'), async (req, res) => {
   const fullName = String(req.body.fullName || '').trim().slice(0,120);
   const dni = cleanDigits(req.body.dni);
@@ -285,6 +361,12 @@ app.post('/api/members', auth, requireRole('admin'), async (req, res) => {
   }
   if (!monotributoFile || !autoVerified || !cuitMatched) {
     return res.status(400).json({ error: 'La constancia de monotributo debe verificarse y coincidir con el CUIT.' });
+  }
+
+  try {
+    await assertMemberQuotaAvailable(pool, 'incorporar más miembros');
+  } catch (quotaError) {
+    return res.status(quotaError.statusCode || 403).json({ error: quotaError.message });
   }
 
   const duplicate = await pool.query(`
@@ -359,13 +441,25 @@ app.post('/api/members/:id/deactivate', auth, requireRole('admin'), async (req, 
 app.post('/api/members/:id/reactivate', auth, requireRole('admin'), async (req, res) => {
   const memberId = Number(req.params.id);
   const member = await getMember(memberId);
-  if (!member) return res.status(404).json({ error: 'Socio no encontrado.' });
-  if (member.active || member.verification_pending) return res.status(409).json({ error: 'El socio no se encuentra dado de baja.' });
+  if (!member) {
+    return res.status(404).json({ error: 'Socio no encontrado.' });
+  }
+  if (member.active || member.verification_pending) {
+    return res.status(409).json({ error: 'El socio no se encuentra dado de baja.' });
+  }
   const monotributoFile = String(req.body.monotributoFile || '').trim().slice(0,255);
   const monotributoMimeType = String(req.body.monotributoMimeType || 'application/pdf').trim().slice(0,120);
   const monotributoContent = decodePdfBase64(req.body.monotributoContentBase64);
   const verified = req.body.monotributoAutoVerified === true && req.body.monotributoCuitMatched === true;
-  if (!monotributoFile || !verified) return res.status(400).json({ error: 'Para reincorporar se requiere una nueva constancia verificada.' });
+  if (!monotributoFile || !verified) {
+    return res.status(400).json({ error: 'Para reincorporar se requiere una nueva constancia verificada.' });
+  }
+
+  try {
+    await assertMemberQuotaAvailable(pool, 'reincorporar asociados');
+  } catch (quotaError) {
+    return res.status(quotaError.statusCode || 403).json({ error: quotaError.message });
+  }
 
   const client = await pool.connect();
   try {
@@ -556,6 +650,24 @@ app.post('/api/retributions/:memberId/transfer', auth, requireRole('admin'), asy
   res.json(rows[0]);
 });
 
+app.post('/api/retributions/transfer-all', auth, requireRole('admin'), async (req, res) => {
+  const { rows: members } = await pool.query('SELECT id,full_name FROM members WHERE active=TRUE AND verification_pending=FALSE ORDER BY full_name');
+  let transferredCount = 0;
+  for (const member of members) {
+    const calc = await getRetribution(member.id);
+    if (calc && Number(calc.total) > 0) {
+      await pool.query(`
+        INSERT INTO retribution_transfers(member_id,period_key,amount,transferred_at)
+        VALUES($1,'actual',$2,NOW())
+        ON CONFLICT(member_id,period_key)
+        DO UPDATE SET amount=EXCLUDED.amount,transferred_at=NOW()
+      `, [member.id, calc.total]);
+      transferredCount++;
+    }
+  }
+  res.json({ message: `Se registraron las transferencias de ${transferredCount} asociados.`, transferredCount });
+});
+
 
 app.get('/api/financial-movements', auth, requireRole('admin'), async (req,res) => {
   const { rows } = await pool.query(`SELECT id,movement_type,concept,amount::float8,movement_date,created_at FROM financial_movements ORDER BY movement_date DESC,id DESC`);
@@ -586,6 +698,244 @@ app.post('/api/fund-movements', auth, requireRole('admin'), async (req,res) => {
   if (!fundName || !(amount > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(movementDate)) return res.status(400).json({error:'Movimiento de fondo inválido.'});
   const { rows } = await pool.query(`INSERT INTO fund_movements(fund_name,movement_type,amount,reason,movement_date) VALUES($1,$2,$3,$4,$5) RETURNING *`,[fundName,movementType,amount,reason||null,movementDate]);
   res.status(201).json(rows[0]);
+});
+
+app.get('/api/subscription', auth, async (req, res) => {
+  const sub = await getSubscriptionSettings(pool);
+  const countRes = await pool.query(`
+    SELECT
+      COUNT(*) FILTER (WHERE active = TRUE OR verification_pending = TRUE) AS active_count,
+      COUNT(*) AS total_count
+    FROM members
+  `);
+  const activeCount = Number(countRes.rows[0]?.active_count || 0);
+  const totalCount = Number(countRes.rows[0]?.total_count || 0);
+  const isFree = sub.plan === 'free';
+  res.json({
+    plan: sub.plan,
+    planName: isFree ? 'Plan Semilla (Gratis)' : 'Plan Profesional (Premium)',
+    maxMembers: isFree ? Number(sub.max_members || 5) : null,
+    pricePerMonth: Number(sub.price_per_month || 0),
+    activeCount,
+    totalCount,
+    isLimitReached: isFree && activeCount >= Number(sub.max_members || 5),
+    features: {
+      unlimitedMembers: !isFree,
+      surplusModule: !isFree,
+      prioritySupport: !isFree,
+      advancedReporting: !isFree
+    },
+    updatedAt: sub.updated_at
+  });
+});
+
+app.post('/api/subscription/upgrade', auth, requireRole('admin'), async (req, res) => {
+  await pool.query(`
+    UPDATE subscription_settings
+    SET plan = 'pro', max_members = 999999, price_per_month = 25000, updated_at = NOW()
+    WHERE singleton = TRUE
+  `);
+  res.json({
+    ok: true,
+    plan: 'pro',
+    message: '¡Felicitaciones! Tu cooperativa ahora cuenta con el Plan Profesional (Premium) con asociados ilimitados y módulo de excedentes.'
+  });
+});
+
+app.post('/api/subscription/downgrade', auth, requireRole('admin'), async (req, res) => {
+  await pool.query(`
+    UPDATE subscription_settings
+    SET plan = 'free', max_members = 5, price_per_month = 0, updated_at = NOW()
+    WHERE singleton = TRUE
+  `);
+  res.json({
+    ok: true,
+    plan: 'free',
+    message: 'Has vuelto al Plan Semilla (Gratuito). El límite para incorporar nuevos asociados es de 5 miembros.'
+  });
+});
+
+app.post('/api/surplus/calculate', auth, requireRole('admin'), async (req, res) => {
+  const totalSurplus = Number(req.body.totalSurplus);
+  const periodLabel = String(req.body.periodLabel || 'Ejercicio Anual').trim().slice(0, 100);
+  if (!(totalSurplus > 0)) {
+    return res.status(400).json({ error: 'El monto de excedente a distribuir debe ser mayor a 0.' });
+  }
+
+  const { reserveLegal, educationFund, assistanceFund, totalFunds, distributable } = calculateSurplusBreakdown(totalSurplus);
+  const members = await getActiveMembersWorkSummary(pool);
+  if (!members.length) {
+    return res.status(400).json({ error: 'No hay asociados activos para distribuir excedentes.' });
+  }
+
+  const totalHours = members.reduce((sum, m) => sum + Number(m.total_hours || 0), 0);
+  const distribution = members.map((m) => {
+    const hours = Number(m.total_hours || 0);
+    const percentage = totalHours > 0 ? (hours / totalHours) * 100 : (100 / members.length);
+    const returnAmount = Math.round(distributable * (percentage / 100) * 100) / 100;
+    return {
+      memberId: m.id,
+      fullName: m.full_name,
+      cuit: m.cuit,
+      hours,
+      percentage: Math.round(percentage * 1000) / 1000,
+      returnAmount
+    };
+  });
+
+  res.json({
+    periodLabel,
+    totalSurplus,
+    reserveLegal,
+    educationFund,
+    assistanceFund,
+    totalFunds,
+    distributable,
+    totalHours,
+    activeMembersCount: members.length,
+    distribution
+  });
+});
+
+app.post('/api/surplus/distributions', auth, requireRole('admin'), async (req, res) => {
+  const totalSurplus = Number(req.body.totalSurplus);
+  const periodLabel = String(req.body.periodLabel || 'Ejercicio Anual').trim().slice(0, 100);
+  if (!(totalSurplus > 0)) {
+    return res.status(400).json({ error: 'El monto de excedente debe ser mayor a 0.' });
+  }
+
+  const sub = await getSubscriptionSettings(pool);
+  if (sub.plan !== 'pro') {
+    return res.status(403).json({
+      error: 'La registración contable de excedentes requiere una suscripción al Plan Profesional activa.'
+    });
+  }
+
+  const { reserveLegal, educationFund, assistanceFund, distributable } = calculateSurplusBreakdown(totalSurplus);
+  const members = await getActiveMembersWorkSummary(pool);
+  if (!members.length) {
+    return res.status(400).json({ error: 'No hay asociados activos para distribuir excedentes.' });
+  }
+
+  const totalHours = members.reduce((sum, m) => sum + Number(m.total_hours || 0), 0);
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const distRes = await client.query(`
+      INSERT INTO surplus_distributions (
+        period_label, total_surplus, reserve_legal_amount, education_fund_amount,
+        assistance_fund_amount, distributable_amount, total_hours, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'closed')
+      RETURNING *
+    `, [periodLabel, totalSurplus, reserveLegal, educationFund, assistanceFund, distributable, totalHours]);
+
+    const distId = distRes.rows[0].id;
+
+    for (const m of members) {
+      const hours = Number(m.total_hours || 0);
+      const percentage = totalHours > 0 ? (hours / totalHours) * 100 : (100 / members.length);
+      const returnAmount = Math.round(distributable * (percentage / 100) * 100) / 100;
+      await client.query(`
+        INSERT INTO surplus_distribution_items (
+          distribution_id, member_id, hours, percentage, return_amount
+        ) VALUES ($1, $2, $3, $4, $5)
+      `, [distId, m.id, hours, Math.round(percentage * 1000) / 1000, returnAmount]);
+    }
+
+    await client.query(`
+      INSERT INTO fund_movements (fund_name, movement_type, amount, reason, movement_date)
+      VALUES
+        ('Fondo de reserva', 'Ingreso', $1, $2, CURRENT_DATE),
+        ('Fondo de educación y capacitación', 'Ingreso', $3, $4, CURRENT_DATE),
+        ('Fondo de acción asistencial', 'Ingreso', $5, $6, CURRENT_DATE)
+    `, [
+      reserveLegal, `Excedente Ley 20.337 (5% Reserva Legal) - ${periodLabel}`,
+      educationFund, `Excedente Ley 20.337 (5% Educación Cooperativa) - ${periodLabel}`,
+      assistanceFund, `Excedente Ley 20.337 (5% Acción Asistencial) - ${periodLabel}`
+    ]);
+
+    await client.query(`
+      INSERT INTO financial_movements (movement_type, concept, amount, movement_date)
+      VALUES ('Gasto', $1, $2, CURRENT_DATE)
+    `, [`Retorno de excedentes a asociados (85%) - ${periodLabel}`, distributable]);
+
+    await client.query('COMMIT');
+    res.status(201).json({ ok: true, distribution: distRes.rows[0] });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+});
+
+app.get('/api/surplus/distributions', auth, requireRole('admin'), async (req, res) => {
+  const { rows } = await pool.query(`
+    SELECT d.*,
+      COALESCE((
+        SELECT json_agg(json_build_object(
+          'id', i.id,
+          'memberId', i.member_id,
+          'fullName', m.full_name,
+          'cuit', m.cuit,
+          'hours', i.hours,
+          'percentage', i.percentage,
+          'returnAmount', i.return_amount
+        ) ORDER BY i.return_amount DESC)
+        FROM surplus_distribution_items i
+        JOIN members m ON m.id = i.member_id
+        WHERE i.distribution_id = d.id
+      ), '[]'::json) AS items
+    FROM surplus_distributions d
+    ORDER BY d.created_at DESC
+  `);
+  res.json(rows);
+});
+
+app.get('/api/surplus/me', auth, requireRole('associate'), async (req, res) => {
+  const memberId = req.user.memberId;
+  if (!memberId) {
+    return res.status(400).json({ error: 'Usuario no asociado a un miembro.' });
+  }
+  const { rows } = await pool.query(`
+    SELECT d.id AS distribution_id, d.period_label, d.total_surplus, d.distributable_amount,
+           d.total_hours AS total_coop_hours, d.created_at,
+           i.hours AS my_hours, i.percentage AS my_percentage, i.return_amount AS my_return_amount
+    FROM surplus_distributions d
+    JOIN surplus_distribution_items i ON i.distribution_id = d.id AND i.member_id = $1
+    ORDER BY d.created_at DESC
+    LIMIT 1
+  `, [memberId]);
+
+  if (!rows.length) {
+    return res.json({
+      hasDistribution: false,
+      distributionId: null,
+      periodLabel: null,
+      totalSurplus: 0,
+      distributableAmount: 0,
+      totalCoopHours: 0,
+      createdAt: null,
+      myHours: 0,
+      myPercentage: 0,
+      myReturnAmount: 0
+    });
+  }
+  const row = rows[0];
+  res.json({
+    hasDistribution: true,
+    distributionId: row.distribution_id,
+    periodLabel: row.period_label,
+    totalSurplus: Number(row.total_surplus || 0),
+    distributableAmount: Number(row.distributable_amount || 0),
+    totalCoopHours: Number(row.total_coop_hours || 0),
+    createdAt: row.created_at,
+    myHours: Number(row.my_hours || 0),
+    myPercentage: Number(row.my_percentage || 0),
+    myReturnAmount: Number(row.my_return_amount || 0)
+  });
 });
 
 app.get('/api/motions', auth, async (req, res) => {
@@ -692,13 +1042,20 @@ app.use((err, req, res, next) => {
   res.status(err.statusCode || 500).json({ error: err.message || 'Ocurrió un error en el servidor.' });
 });
 
-ensureRuntimeSchema()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`CoopGestión disponible en http://localhost:${PORT}`);
+if (require.main === module) {
+  ensureRuntimeSchema()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`CoopGestión disponible en http://localhost:${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error('No se pudo preparar el esquema de base de datos:', err);
+      process.exit(1);
     });
-  })
-  .catch(err => {
-    console.error('No se pudo preparar el esquema de base de datos:', err);
-    process.exit(1);
-  });
+}
+
+module.exports = {
+  app,
+  calculateSurplusBreakdown
+};
