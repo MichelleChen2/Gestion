@@ -6,7 +6,12 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "docker:up": "make up",
+    "docker:down": "make down",
+    "docker:rebuild": "make rebuild",
+    "docker:destroy": "make destroy",
+    "docker:logs": "make logs"
   },
   "dependencies": {
     "cors": "^2.8.5",
