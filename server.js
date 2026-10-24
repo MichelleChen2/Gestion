@@ -1,14 +1,17 @@
 require('dotenv').config();
+require('express-async-errors');
 
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { pool } = require('./db');
+const { validateMonotributoBuffer, validateMonotributoText, DEFAULT_ALERT_DAYS } = require('./monotributo');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-change-me';
+const MONOTRIBUTO_ALERT_DAYS = Number(process.env.MONOTRIBUTO_ALERT_DAYS || DEFAULT_ALERT_DAYS);
 
 app.use(cors({
   origin(origin, cb) {
@@ -32,10 +35,45 @@ async function ensureRuntimeSchema() {
       content BYTEA NOT NULL,
       auto_verified BOOLEAN NOT NULL DEFAULT FALSE,
       cuit_matched BOOLEAN NOT NULL DEFAULT FALSE,
+      issued_at DATE,
+      expires_at DATE,
+      validity_status VARCHAR(30) NOT NULL DEFAULT 'unknown',
+      validity_source VARCHAR(80),
+      verified_at TIMESTAMPTZ,
+      validation_details JSONB,
+      is_current BOOLEAN NOT NULL DEFAULT FALSE,
       uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+    ALTER TABLE member_documents ADD COLUMN IF NOT EXISTS issued_at DATE;
+    ALTER TABLE member_documents ADD COLUMN IF NOT EXISTS expires_at DATE;
+    ALTER TABLE member_documents ADD COLUMN IF NOT EXISTS validity_status VARCHAR(30) NOT NULL DEFAULT 'unknown';
+    ALTER TABLE member_documents ADD COLUMN IF NOT EXISTS validity_source VARCHAR(80);
+    ALTER TABLE member_documents ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;
+    ALTER TABLE member_documents ADD COLUMN IF NOT EXISTS validation_details JSONB;
+    ALTER TABLE member_documents ADD COLUMN IF NOT EXISTS is_current BOOLEAN NOT NULL DEFAULT FALSE;
     CREATE INDEX IF NOT EXISTS member_documents_member_type_idx
       ON member_documents(member_id, document_type, uploaded_at DESC);
+  `);
+  await pool.query(`
+    WITH ranked AS (
+      SELECT id,ROW_NUMBER() OVER(PARTITION BY member_id,document_type ORDER BY uploaded_at DESC,id DESC) rn
+      FROM member_documents
+    )
+    UPDATE member_documents d SET is_current=(ranked.rn=1)
+    FROM ranked WHERE ranked.id=d.id
+  `);
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS member_documents_current_uidx
+    ON member_documents(member_id,document_type) WHERE is_current=TRUE`);
+
+  // Versiones anteriores podían derivar el vencimiento sumando días a la fecha
+  // de emisión. Esa regla ya no se usa: cualquier vencimiento derivado se invalida
+  // y el asociado deberá subir una constancia que tenga vencimiento explícito.
+  await pool.query(`
+    UPDATE member_documents
+    SET expires_at=NULL,
+        validity_status='unknown',
+        validity_source='missing_expiry'
+    WHERE validity_source LIKE 'derived_%'
   `);
 }
 
@@ -58,6 +96,55 @@ function decodePdfBase64(value) {
     throw err;
   }
   return content;
+}
+
+
+async function validateUploadedMonotributo(content, expectedCuit, extractedText='') {
+  let validation;
+  let serverParseError=null;
+  try {
+    validation = await validateMonotributoBuffer(content, expectedCuit, {
+      alertDays: MONOTRIBUTO_ALERT_DAYS
+    });
+  } catch (err) {
+    // pdf-parse puede fallar con algunos PDFs que PDF.js del navegador sí puede leer.
+    // En ese caso usamos como fallback el texto extraído en el cliente, pero la
+    // validación (CUIT + vencimiento vs fecha actual) se vuelve a hacer en backend.
+    serverParseError=err;
+    const fallback=String(extractedText||'').slice(0,100000).trim();
+    if (fallback) {
+      validation = validateMonotributoText(fallback, expectedCuit, {
+        alertDays: MONOTRIBUTO_ALERT_DAYS
+      });
+      validation.textExtraction='browser_pdfjs_fallback';
+    } else {
+      const problem=new Error('No se pudo leer el texto del PDF. Probá con una constancia con texto seleccionable.');
+      problem.statusCode=400;
+      problem.causeMessage=serverParseError?.message;
+      throw problem;
+    }
+  }
+  if (!validation.valid) {
+    const err=new Error(validation.message || 'La constancia no superó la verificación automática.');
+    err.statusCode=400;
+    err.validation=validation;
+    throw err;
+  }
+  return validation;
+}
+
+async function storeCurrentMonotributo(client, memberId, fileName, mimeType, content, validation) {
+  await client.query(`UPDATE member_documents SET is_current=FALSE
+    WHERE member_id=$1 AND document_type='monotributo' AND is_current=TRUE`,[memberId]);
+  const { rows } = await client.query(`
+    INSERT INTO member_documents(
+      member_id,document_type,file_name,mime_type,file_size,content,auto_verified,cuit_matched,
+      issued_at,expires_at,validity_status,validity_source,verified_at,validation_details,is_current
+    ) VALUES($1,'monotributo',$2,$3,$4,$5,TRUE,TRUE,$6,$7,$8,$9,NOW(),$10::jsonb,TRUE)
+    RETURNING id,file_name,mime_type,file_size,issued_at,expires_at,validity_status,validity_source,verified_at,uploaded_at,is_current
+  `,[memberId,fileName,mimeType,content.length,content,validation.issuedAt,validation.expiresAt,
+      validation.status,validation.validitySource,JSON.stringify(validation)]);
+  return rows[0];
 }
 
 function signUser(user) {
@@ -87,18 +174,53 @@ function requireRole(role) {
   };
 }
 
+async function getCurrentMonotributo(memberId) {
+  const { rows } = await pool.query(`
+    SELECT id,member_id,file_name,mime_type,file_size,auto_verified,cuit_matched,
+      issued_at,expires_at,validity_source,verified_at,uploaded_at,is_current,
+      CASE
+        WHEN expires_at IS NULL THEN 'unknown'
+        WHEN expires_at < CURRENT_DATE THEN 'expired'
+        WHEN expires_at <= CURRENT_DATE + ($2::int * INTERVAL '1 day') THEN 'expiring'
+        ELSE 'valid'
+      END AS validity_status,
+      CASE WHEN expires_at IS NULL THEN NULL ELSE (expires_at - CURRENT_DATE)::int END AS days_remaining
+    FROM member_documents
+    WHERE member_id=$1 AND document_type='monotributo' AND is_current=TRUE
+    ORDER BY uploaded_at DESC,id DESC LIMIT 1
+  `,[memberId,MONOTRIBUTO_ALERT_DAYS]);
+  return rows[0] || null;
+}
+
+function documentMemberFields(alias='d') {
+  return `
+    ${alias}.id AS monotributo_document_id,
+    ${alias}.issued_at AS monotributo_issued_at,
+    ${alias}.expires_at AS monotributo_expires_at,
+    ${alias}.validity_source AS monotributo_validity_source,
+    CASE
+      WHEN ${alias}.id IS NULL OR ${alias}.expires_at IS NULL THEN 'unknown'
+      WHEN ${alias}.expires_at < CURRENT_DATE THEN 'expired'
+      WHEN ${alias}.expires_at <= CURRENT_DATE + (${MONOTRIBUTO_ALERT_DAYS} * INTERVAL '1 day') THEN 'expiring'
+      ELSE 'valid'
+    END AS monotributo_validity_status,
+    CASE WHEN ${alias}.expires_at IS NULL THEN NULL ELSE (${alias}.expires_at - CURRENT_DATE)::int END AS monotributo_days_remaining`;
+}
+
 async function getMember(memberId) {
   const { rows } = await pool.query(`
-    SELECT m.*,
-      EXISTS (
-        SELECT 1 FROM member_documents d
-        WHERE d.member_id=m.id AND d.document_type='monotributo'
-      ) AS monotributo_stored,
+    SELECT m.*, ${documentMemberFields('d')},
+      (d.id IS NOT NULL) AS monotributo_stored,
       COALESCE(array_agg(a.role ORDER BY a.role) FILTER (WHERE a.role IS NOT NULL), '{}') AS roles
     FROM members m
+    LEFT JOIN LATERAL (
+      SELECT * FROM member_documents md
+      WHERE md.member_id=m.id AND md.document_type='monotributo' AND md.is_current=TRUE
+      ORDER BY md.uploaded_at DESC,md.id DESC LIMIT 1
+    ) d ON TRUE
     LEFT JOIN authorities a ON a.member_id = m.id
     WHERE m.id = $1
-    GROUP BY m.id
+    GROUP BY m.id,d.id,d.issued_at,d.expires_at,d.validity_source
   `, [memberId]);
   return rows[0] || null;
 }
@@ -210,15 +332,17 @@ app.get('/api/me', auth, async (req, res) => {
 
 app.get('/api/members', auth, requireRole('admin'), async (req, res) => {
   const { rows } = await pool.query(`
-    SELECT m.*,
-      EXISTS (
-        SELECT 1 FROM member_documents d
-        WHERE d.member_id=m.id AND d.document_type='monotributo'
-      ) AS monotributo_stored,
+    SELECT m.*, ${documentMemberFields('d')},
+      (d.id IS NOT NULL) AS monotributo_stored,
       COALESCE(array_agg(a.role ORDER BY a.role) FILTER (WHERE a.role IS NOT NULL), '{}') AS roles
     FROM members m
+    LEFT JOIN LATERAL (
+      SELECT * FROM member_documents md
+      WHERE md.member_id=m.id AND md.document_type='monotributo' AND md.is_current=TRUE
+      ORDER BY md.uploaded_at DESC,md.id DESC LIMIT 1
+    ) d ON TRUE
     LEFT JOIN authorities a ON a.member_id=m.id
-    GROUP BY m.id
+    GROUP BY m.id,d.id,d.issued_at,d.expires_at,d.validity_source
     ORDER BY m.full_name
   `);
   res.json(rows);
@@ -272,8 +396,9 @@ app.post('/api/members', auth, requireRole('admin'), async (req, res) => {
   const monotributoFile = String(req.body.monotributoFile || '').trim().slice(0,255);
   const monotributoMimeType = String(req.body.monotributoMimeType || 'application/pdf').trim().slice(0,120);
   const monotributoContent = decodePdfBase64(req.body.monotributoContentBase64);
-  const autoVerified = req.body.monotributoAutoVerified === true;
-  const cuitMatched = req.body.monotributoCuitMatched === true;
+  const validation = await validateUploadedMonotributo(monotributoContent, cuit, req.body.monotributoExtractedText);
+  const autoVerified = validation.valid;
+  const cuitMatched = validation.cuitMatches;
   const username = String(req.body.username || '').trim().toLowerCase();
   const password = String(req.body.password || '');
 
@@ -284,7 +409,7 @@ app.post('/api/members', auth, requireRole('admin'), async (req, res) => {
     return res.status(400).json({ error: 'El aporte inicial debe estar entre el 5% y el 100% del capital suscripto.' });
   }
   if (!monotributoFile || !autoVerified || !cuitMatched) {
-    return res.status(400).json({ error: 'La constancia de monotributo debe verificarse y coincidir con el CUIT.' });
+    return res.status(400).json({ error: 'La constancia de monotributo debe verificarse, coincidir con el CUIT y estar vigente.' });
   }
 
   const duplicate = await pool.query(`
@@ -312,15 +437,11 @@ app.post('/api/members', auth, requireRole('admin'), async (req, res) => {
         monotributo_file,monotributo_status,monotributo_auto_verified,
         monotributo_cuit_matched,verification_pending,active
       )
-      VALUES($1,$2,$3,$4,$5,$6,$7,'Pendiente de revisión',TRUE,TRUE,TRUE,FALSE)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,TRUE,TRUE,TRUE,FALSE)
       RETURNING *
-    `,[fullName,dni,cuit,email,capitalSubscribed,capitalIntegrated,monotributoFile]);
+    `,[fullName,dni,cuit,email,capitalSubscribed,capitalIntegrated,monotributoFile,validation.status==='expiring'?'Vence pronto':'Pendiente de revisión']);
     const member = inserted.rows[0];
-    await client.query(`
-      INSERT INTO member_documents(
-        member_id,document_type,file_name,mime_type,file_size,content,auto_verified,cuit_matched
-      ) VALUES($1,'monotributo',$2,$3,$4,$5,TRUE,TRUE)
-    `,[member.id,monotributoFile,monotributoMimeType,monotributoContent.length,monotributoContent]);
+    await storeCurrentMonotributo(client, member.id, monotributoFile, monotributoMimeType, monotributoContent, validation);
     await ensureAssociateUser(client, member.id, username, password, fullName, false);
     await client.query('COMMIT');
     res.status(201).json(member);
@@ -337,7 +458,9 @@ app.post('/api/members/:id/approve', auth, requireRole('admin'), async (req, res
   const memberId = Number(req.params.id);
   const { rows } = await pool.query(`
     UPDATE members
-    SET active=TRUE, verification_pending=FALSE, monotributo_status='Al día', updated_at=NOW()
+    SET active=TRUE, verification_pending=FALSE, monotributo_status=CASE
+      WHEN EXISTS(SELECT 1 FROM member_documents d WHERE d.member_id=members.id AND d.is_current=TRUE AND d.expires_at <= CURRENT_DATE + (${MONOTRIBUTO_ALERT_DAYS} * INTERVAL '1 day')) THEN 'Vence pronto'
+      ELSE 'Al día' END, updated_at=NOW()
     WHERE id=$1 AND verification_pending=TRUE
     RETURNING *
   `,[memberId]);
@@ -364,22 +487,18 @@ app.post('/api/members/:id/reactivate', auth, requireRole('admin'), async (req, 
   const monotributoFile = String(req.body.monotributoFile || '').trim().slice(0,255);
   const monotributoMimeType = String(req.body.monotributoMimeType || 'application/pdf').trim().slice(0,120);
   const monotributoContent = decodePdfBase64(req.body.monotributoContentBase64);
-  const verified = req.body.monotributoAutoVerified === true && req.body.monotributoCuitMatched === true;
-  if (!monotributoFile || !verified) return res.status(400).json({ error: 'Para reincorporar se requiere una nueva constancia verificada.' });
+  const validation = await validateUploadedMonotributo(monotributoContent, member.cuit, req.body.monotributoExtractedText);
+  if (!monotributoFile || !validation.valid) return res.status(400).json({ error: 'Para reincorporar se requiere una constancia vigente y verificada.' });
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const { rows } = await client.query(`
-      UPDATE members SET monotributo_file=$2,monotributo_status='Pendiente de revisión',monotributo_auto_verified=TRUE,
+      UPDATE members SET monotributo_file=$2,monotributo_status=$3,monotributo_auto_verified=TRUE,
         monotributo_cuit_matched=TRUE,verification_pending=TRUE,active=FALSE,updated_at=NOW()
       WHERE id=$1 RETURNING *
-    `,[memberId,monotributoFile]);
-    await client.query(`
-      INSERT INTO member_documents(
-        member_id,document_type,file_name,mime_type,file_size,content,auto_verified,cuit_matched
-      ) VALUES($1,'monotributo',$2,$3,$4,$5,TRUE,TRUE)
-    `,[memberId,monotributoFile,monotributoMimeType,monotributoContent.length,monotributoContent]);
+    `,[memberId,monotributoFile,validation.status==='expiring'?'Vence pronto':'Pendiente de revisión']);
+    await storeCurrentMonotributo(client, memberId, monotributoFile, monotributoMimeType, monotributoContent, validation);
     await client.query('UPDATE users SET enabled=FALSE WHERE member_id=$1',[memberId]);
     await client.query('COMMIT');
     res.json(rows[0]);
@@ -399,7 +518,7 @@ app.get('/api/members/:id/monotributo', auth, async (req,res) => {
   const { rows } = await pool.query(`
     SELECT file_name,mime_type,file_size,content,uploaded_at
     FROM member_documents
-    WHERE member_id=$1 AND document_type='monotributo'
+    WHERE member_id=$1 AND document_type='monotributo' AND is_current=TRUE
     ORDER BY uploaded_at DESC,id DESC
     LIMIT 1
   `,[memberId]);
@@ -410,6 +529,49 @@ app.get('/api/members/:id/monotributo', auth, async (req,res) => {
   res.setHeader('Content-Length', String(doc.file_size));
   res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${safeName}`);
   res.send(doc.content);
+});
+
+app.get('/api/me/monotributo/status', auth, requireRole('associate'), async (req,res) => {
+  const doc=await getCurrentMonotributo(req.user.memberId);
+  res.json({
+    document: doc,
+    alertDays: MONOTRIBUTO_ALERT_DAYS,
+  });
+});
+
+app.post('/api/me/monotributo', auth, requireRole('associate'), async (req,res) => {
+  const member=await getMember(req.user.memberId);
+  if (!member) return res.status(404).json({error:'Socio no encontrado.'});
+  const fileName=String(req.body.fileName||'constancia_monotributo.pdf').trim().slice(0,255);
+  const mimeType=String(req.body.mimeType||'application/pdf').trim().slice(0,120);
+  const content=decodePdfBase64(req.body.contentBase64);
+  const validation=await validateUploadedMonotributo(content,member.cuit,req.body.extractedText);
+  const client=await pool.connect();
+  try{
+    await client.query('BEGIN');
+    const doc=await storeCurrentMonotributo(client,member.id,fileName,mimeType,content,validation);
+    await client.query(`UPDATE members SET monotributo_file=$2,monotributo_status=$3,
+      monotributo_auto_verified=TRUE,monotributo_cuit_matched=TRUE,updated_at=NOW() WHERE id=$1`,
+      [member.id,fileName,validation.status==='expiring'?'Vence pronto':'Al día']);
+    await client.query('COMMIT');
+    res.status(201).json({document:doc,validation});
+  }catch(err){await client.query('ROLLBACK');throw err}finally{client.release()}
+});
+
+app.get('/api/admin/monotributos/alerts', auth, requireRole('admin'), async (req,res) => {
+  const {rows}=await pool.query(`
+    SELECT m.id AS member_id,m.full_name,m.cuit,m.email,d.file_name,d.issued_at,d.expires_at,d.verified_at,
+      CASE WHEN d.expires_at < CURRENT_DATE THEN 'expired'
+           WHEN d.expires_at <= CURRENT_DATE + ($1::int * INTERVAL '1 day') THEN 'expiring'
+           ELSE 'valid' END AS status,
+      (d.expires_at-CURRENT_DATE)::int AS days_remaining
+    FROM members m
+    JOIN member_documents d ON d.member_id=m.id AND d.document_type='monotributo' AND d.is_current=TRUE
+    WHERE m.active=TRUE AND m.verification_pending=FALSE AND d.expires_at IS NOT NULL
+      AND d.expires_at <= CURRENT_DATE + ($1::int * INTERVAL '1 day')
+    ORDER BY d.expires_at ASC,m.full_name ASC
+  `,[MONOTRIBUTO_ALERT_DAYS]);
+  res.json({alertDays:MONOTRIBUTO_ALERT_DAYS,items:rows});
 });
 
 app.get('/api/authorities', auth, requireRole('admin'), async (req,res) => {
@@ -689,7 +851,7 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(err.statusCode || 500).json({ error: err.message || 'Ocurrió un error en el servidor.' });
+  res.status(err.statusCode || 500).json({ error: err.message || 'Ocurrió un error en el servidor.', ...(err.validation?{validation:err.validation}:{}) });
 });
 
 ensureRuntimeSchema()

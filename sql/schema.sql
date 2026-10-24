@@ -30,10 +30,19 @@ CREATE TABLE IF NOT EXISTS member_documents (
   content BYTEA NOT NULL,
   auto_verified BOOLEAN NOT NULL DEFAULT FALSE,
   cuit_matched BOOLEAN NOT NULL DEFAULT FALSE,
+  issued_at DATE,
+  expires_at DATE,
+  validity_status VARCHAR(30) NOT NULL DEFAULT 'unknown',
+  validity_source VARCHAR(80),
+  verified_at TIMESTAMPTZ,
+  validation_details JSONB,
+  is_current BOOLEAN NOT NULL DEFAULT FALSE,
   uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS member_documents_member_type_idx
   ON member_documents(member_id, document_type, uploaded_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS member_documents_current_uidx
+  ON member_documents(member_id, document_type) WHERE is_current=TRUE;
 
 CREATE TABLE IF NOT EXISTS users (
   id BIGSERIAL PRIMARY KEY,

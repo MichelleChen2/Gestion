@@ -1,14 +1,4 @@
-# Gestión de Sistemas Informáticos - 2C2026
-
-## Integrantes: 
-- Oviedo, Ignacio 109821
-- Avila Solano, Nelson 100244
-- Alzogaray, Joaquin 108905
-- Tosi, Marco 107237
-- Paz Blanco, Pilar 105600
-- Chen, Michelle Melisa 105506
-
-## Cooperativa — Administrador + Asociado + PostgreSQL
+# CoopGestión — Administrador + Asociado + PostgreSQL
 
 Esta versión reemplaza el login y los datos compartidos en `localStorage` por un backend real con **Node.js + Express + PostgreSQL**.
 
@@ -140,3 +130,27 @@ La aplicación ejecuta una migración `CREATE TABLE IF NOT EXISTS member_documen
 arrancar, por lo que esta corrección funciona incluso si conservás el volumen de PostgreSQL
 anterior. Los socios demo creados antes de esta versión pueden tener solamente el nombre
 histórico del archivo; el PDF real aparecerá para nuevas altas/reincorporaciones.
+
+
+## Control de vencimiento de constancias de monotributo
+
+La constancia actual queda almacenada en `member_documents` con fecha de emisión (si está disponible), fecha de vencimiento, estado de vigencia y resultado de la verificación. No se consulta ARCA ni se calcula una vigencia con reglas externas: la aplicación toma la fecha de vencimiento explícita del PDF y la compara con la fecha actual. Por defecto avisa 5 días antes; ese umbral se configura con `MONOTRIBUTO_ALERT_DAYS`.
+
+- El asociado recibe una alerta en Inicio y Mi perfil cuando la constancia está por vencer o vencida.
+- Desde Mi perfil puede subir una nueva constancia; el backend verifica tipo de documento, CUIT y vigencia antes de aceptarla.
+- Administración ve en Socios y aportes una lista de asociados con constancias vencidas o próximas a vencer.
+- Las constancias anteriores se conservan (`is_current=false`) y la última válida queda como actual.
+- La validación final se realiza del lado servidor con `pdf-parse`. PDF.js queda como verificación previa visual en el alta administrativa.
+
+Si ya existe un volumen PostgreSQL anterior, `server.js` agrega las nuevas columnas al iniciar. También se incluye `sql/migrations/002_monotributo_vigencia.sql`.
+
+
+### Criterio de vigencia simplificado
+
+La vigencia se determina exclusivamente comparando `expires_at` con la fecha actual (`CURRENT_DATE` en PostgreSQL). No se realizan consultas oficiales a ARCA y no se infiere el vencimiento a partir de la fecha de emisión. Si el PDF no contiene una fecha de vencimiento reconocible, la carga queda como no verificable y se solicita una constancia donde esa fecha pueda leerse.
+
+> Compatibilidad: si una base existente contiene vencimientos calculados por una versión anterior (`validity_source` comenzando con `derived_`), al iniciar esta versión se descartan automáticamente esos vencimientos derivados y el documento pasa a `unknown` hasta que se cargue una constancia con vencimiento explícito.
+
+## Corrección: PDFs que `pdf-parse` no puede leer
+
+La API usa `pdf-parse` en servidor. Algunos PDFs pueden ser legibles por PDF.js del navegador pero no por esa librería. En ese caso el frontend envía también el texto extraído por PDF.js y el backend vuelve a ejecutar sobre ese texto los controles de CUIT y vencimiento. Además se agregó `express-async-errors` para que un error de validación devuelva HTTP 400 sin detener el proceso Node.

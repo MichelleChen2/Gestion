@@ -23,6 +23,7 @@ services:
       DATABASE_URL: postgres://coopgestion:coopgestion@db:5432/coopgestion
       JWT_SECRET: desarrollo-coopgestion-cambiar-en-produccion
       FRONTEND_ORIGIN: http://localhost:3000
+      MONOTRIBUTO_ALERT_DAYS: 5
     ports:
       - "3000:3000"
     depends_on:
