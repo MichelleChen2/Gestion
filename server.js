@@ -5,6 +5,7 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const PDFDocument = require('pdfkit');
 const { pool } = require('./db');
 const { validateMonotributoBuffer, validateMonotributoText, DEFAULT_ALERT_DAYS } = require('./monotributo');
 
@@ -611,7 +612,13 @@ app.get('/api/work-logs', auth, async (req, res) => {
   }
   const { rows } = await pool.query(`
     SELECT w.id,w.member_id,w.work_date,w.hours::float8,w.description,w.created_at,m.full_name,
-      (EXTRACT(DOW FROM w.work_date)=0 OR h.holiday_date IS NOT NULL) AS special
+      (EXTRACT(DOW FROM w.work_date)=0 OR h.holiday_date IS NOT NULL) AS special,
+      CASE
+        WHEN h.holiday_date IS NOT NULL THEN 'holiday'
+        WHEN EXTRACT(DOW FROM w.work_date)=0 THEN 'sunday'
+        ELSE 'regular'
+      END AS work_type,
+      h.description AS holiday_description
     FROM work_logs w
     JOIN members m ON m.id=w.member_id
     LEFT JOIN holidays h ON h.holiday_date=w.work_date
@@ -831,6 +838,110 @@ app.post('/api/motions/:id/close', auth, requireRole('admin'), async (req, res) 
     WHERE id=$1 RETURNING *
   `,[motionId,data.computed_result,JSON.stringify(snapshot)]);
   res.json(rows[0]);
+});
+
+
+app.get('/api/motions/:id/report.pdf', auth, requireRole('admin'), async (req, res) => {
+  const motionId = Number(req.params.id);
+  if (!Number.isInteger(motionId) || motionId <= 0) return res.status(400).json({ error: 'Moción inválida.' });
+
+  const { rows } = await pool.query(`
+    SELECT id,title,motion_type,status,created_at,closed_at,result,closed_snapshot
+    FROM motions
+    WHERE id=$1
+  `,[motionId]);
+  const motion = rows[0];
+  if (!motion) return res.status(404).json({ error: 'Moción no encontrada.' });
+  if (motion.status !== 'closed' || !motion.closed_snapshot) {
+    return res.status(409).json({ error: 'La moción todavía no tiene un cierre histórico para exportar.' });
+  }
+
+  const snapshot = motion.closed_snapshot || {};
+  const tally = snapshot.tally || {};
+  const electorate = Array.isArray(snapshot.electorate) ? snapshot.electorate : [];
+  const votes = Array.isArray(snapshot.votes) ? snapshot.votes : [];
+  const votesByMember = new Map(votes.map(v => [String(v.member_id), v]));
+  const resultLabel = motion.result === 'approved' ? 'APROBADA' : 'RECHAZADA';
+  const typeLabel = motion.motion_type === 'extraordinary' ? 'Extraordinaria' : 'Ordinaria';
+  const ruleLabel = motion.motion_type === 'extraordinary'
+    ? 'Mayoría especial: al menos 66% de votos afirmativos sobre habilitados'
+    : 'Mayoría simple: más del 50% de votos afirmativos sobre habilitados';
+  const eligible = Number(tally.eligible || electorate.length || 0);
+  const emitted = Number(tally.emitted || votes.length || 0);
+  const participation = eligible ? (emitted / eligible * 100) : 0;
+
+  const safeFile = String(motion.title || 'mocion')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60) || 'mocion';
+  res.setHeader('Content-Type','application/pdf');
+  res.setHeader('Content-Disposition',`attachment; filename="mocion-${motion.id}-${safeFile}.pdf"`);
+
+  const doc = new PDFDocument({ size:'A4', margin:48, info:{ Title:`Moción cerrada - ${motion.title}`, Author:'CoopGestión' } });
+  doc.pipe(res);
+  const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const fmtDateTime = value => value ? new Intl.DateTimeFormat('es-AR',{dateStyle:'short',timeStyle:'medium',timeZone:'America/Argentina/Buenos_Aires'}).format(new Date(value)) : '—';
+  const ensureSpace = height => { if (doc.y + height > doc.page.height - doc.page.margins.bottom) doc.addPage(); };
+  const section = title => { ensureSpace(42); doc.moveDown(.6).font('Helvetica-Bold').fontSize(13).fillColor('#111827').text(title); doc.moveDown(.35); };
+  const field = (label,value) => { doc.font('Helvetica-Bold').fontSize(8).fillColor('#64748b').text(label.toUpperCase()); doc.font('Helvetica').fontSize(10).fillColor('#111827').text(String(value ?? '—')); doc.moveDown(.45); };
+
+  doc.font('Helvetica-Bold').fontSize(20).fillColor('#111827').text('CoopGestión');
+  doc.font('Helvetica').fontSize(10).fillColor('#64748b').text('Informe histórico de moción cerrada');
+  doc.moveDown(1);
+  doc.font('Helvetica-Bold').fontSize(16).fillColor('#111827').text(motion.title,{width:pageWidth});
+  doc.moveDown(.8);
+  doc.font('Helvetica-Bold').fontSize(11).fillColor(motion.result==='approved'?'#067647':'#b42318').text(resultLabel);
+  doc.fillColor('#111827');
+
+  section('Datos de la moción');
+  field('Tipo',typeLabel);
+  field('Regla aplicada',ruleLabel);
+  field('Creada',fmtDateTime(motion.created_at));
+  field('Cerrada',fmtDateTime(motion.closed_at));
+
+  section('Cómputo final');
+  const metrics=[
+    ['Habilitados',eligible],['Emitidos',emitted],['A favor',Number(tally.in_favor||0)],
+    ['En contra',Number(tally.against||0)],['Abstenciones',Number(tally.abstentions||0)],
+    ['Participación',`${participation.toLocaleString('es-AR',{maximumFractionDigits:1})}%`]
+  ];
+  const startY=doc.y, colW=pageWidth/3;
+  metrics.forEach((item,i)=>{
+    const col=i%3,row=Math.floor(i/3),x=doc.page.margins.left+col*colW,y=startY+row*42;
+    doc.font('Helvetica-Bold').fontSize(15).fillColor('#111827').text(String(item[1]),x,y,{width:colW-8,align:'center'});
+    doc.font('Helvetica').fontSize(8).fillColor('#64748b').text(item[0],x,y+19,{width:colW-8,align:'center'});
+  });
+  doc.y=startY+86;
+
+  section('Detalle de votos');
+  const x0=doc.page.margins.left;
+  const widths=[170,125,85,115];
+  const headers=['Asociado','Rol/es','Voto','Fecha del voto'];
+  const drawHeader=()=>{
+    ensureSpace(28);
+    const y=doc.y;
+    doc.rect(x0,y,pageWidth,24).fill('#eef2f7');
+    let x=x0;
+    headers.forEach((h,i)=>{doc.fillColor('#111827').font('Helvetica-Bold').fontSize(8).text(h,x+5,y+8,{width:widths[i]-10});x+=widths[i];});
+    doc.y=y+24;
+  };
+  drawHeader();
+  const rowsToRender=electorate.length?electorate:votes.map(v=>({member_id:v.member_id,full_name:v.full_name,roles:[]}));
+  for(const person of rowsToRender){
+    if(doc.y+34>doc.page.height-doc.page.margins.bottom){doc.addPage();drawHeader();}
+    const vote=votesByMember.get(String(person.member_id));
+    const roles=Array.isArray(person.roles)&&person.roles.length?person.roles.join(', '):'Asociado';
+    const values=[person.full_name||vote?.full_name||'—',roles,vote?.vote||'Sin voto',fmtDateTime(vote?.created_at)];
+    const y=doc.y;let x=x0;
+    values.forEach((value,i)=>{doc.fillColor('#111827').font('Helvetica').fontSize(8).text(String(value),x+5,y+7,{width:widths[i]-10,height:22,ellipsis:true});x+=widths[i];});
+    doc.moveTo(x0,y+31).lineTo(x0+pageWidth,y+31).strokeColor('#e2e8f0').stroke();
+    doc.y=y+32;
+  }
+
+  section('Registro histórico');
+  doc.font('Helvetica').fontSize(9).fillColor('#475569').text('Este informe se genera a partir del snapshot congelado al momento del cierre. Altas, bajas, reincorporaciones o cambios de autoridades posteriores no modifican estos datos.',{width:pageWidth});
+  doc.moveDown(1);
+  doc.font('Helvetica').fontSize(8).fillColor('#94a3b8').text(`Generado: ${fmtDateTime(new Date().toISOString())} · Moción #${motion.id}`);
+  doc.end();
 });
 
 app.get('/api/minutes', auth, requireRole('admin'), async (req, res) => {

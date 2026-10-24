@@ -154,3 +154,7 @@ La vigencia se determina exclusivamente comparando `expires_at` con la fecha act
 ## Corrección: PDFs que `pdf-parse` no puede leer
 
 La API usa `pdf-parse` en servidor. Algunos PDFs pueden ser legibles por PDF.js del navegador pero no por esa librería. En ese caso el frontend envía también el texto extraído por PDF.js y el backend vuelve a ejecutar sobre ese texto los controles de CUIT y vencimiento. Además se agregó `express-async-errors` para que un error de validación devuelva HTTP 400 sin detener el proceso Node.
+
+## Historial de asambleas y exportación PDF
+
+Las mociones cerradas ya no muestran el `closed_snapshot` como JSON. El historial presenta el resultado, tipo, regla de mayoría, fecha de cierre, cómputo final y una tabla de votos por asociado con los roles congelados al cierre. Administración puede exportar un PDF detallado generado por el backend a partir del snapshot histórico.

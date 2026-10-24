@@ -9,6 +9,20 @@ const $ = (id) => document.getElementById(id);
 const money = (n) => '$' + Number(n || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 });
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const dateOnly = (v) => String(v || '').slice(0,10);
+const workTypeLabel = (workType, holidayDescription='') => {
+  if (workType === 'holiday') {
+    const title = holidayDescription ? ` title="${esc(holidayDescription)}"` : '';
+    return `<span class="badge info"${title}>Feriado</span>`;
+  }
+  if (workType === 'sunday') return '<span class="badge info">Domingo</span>';
+  return 'Habitual';
+};
+const workTypeInline = (workType, holidayDescription='') => {
+  if (workType === 'holiday') return holidayDescription ? `Feriado (${holidayDescription})` : 'Feriado';
+  if (workType === 'sunday') return 'Domingo';
+  return 'Habitual';
+};
+
 const displayDate = (v) => {
   const d = dateOnly(v);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return '—';
@@ -56,6 +70,25 @@ async function downloadMonotributo(memberId,filename='constancia_monotributo.pdf
   if(!response.ok){let data=null;try{data=await response.json()}catch(_){};throw new Error(data?.error||`Error ${response.status}`)}
   const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download=filename||'constancia_monotributo.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+
+async function downloadMotionPdf(motionId,title='mocion'){
+  const response=await fetch(`/api/motions/${motionId}/report.pdf`,{headers:{Authorization:`Bearer ${state.token}`}});
+  if(!response.ok){let data=null;try{data=await response.json()}catch(_){};throw new Error(data?.error||`Error ${response.status}`)}
+  const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');
+  const safe=String(title||'mocion').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'mocion';
+  a.href=url;a.download=`mocion-${safe}.pdf`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function historicalResultLabel(result){return result==='approved'?'APROBADA':'RECHAZADA'}
+function historicalTypeLabel(type){return type==='extraordinary'?'Extraordinaria':'Ordinaria'}
+function historicalRuleLabel(type){return type==='extraordinary'?'Mayoría especial ≥ 66%':'Mayoría simple > 50%'}
+function historyVoteRows(snapshot){
+  const electorate=Array.isArray(snapshot?.electorate)?snapshot.electorate:[];
+  const votes=Array.isArray(snapshot?.votes)?snapshot.votes:[];
+  const byId=new Map(votes.map(v=>[String(v.member_id),v]));
+  const people=electorate.length?electorate:votes.map(v=>({member_id:v.member_id,full_name:v.full_name,roles:[]}));
+  return people.map(p=>{const v=byId.get(String(p.member_id));return{fullName:p.full_name||v?.full_name||'—',roles:Array.isArray(p.roles)&&p.roles.length?p.roles:['Asociado'],vote:v?.vote||'Sin voto',createdAt:v?.created_at||null}});
 }
 
 function notify(message, type='ok') {
@@ -267,7 +300,7 @@ async function renderAdminWork() {
       </form>
       <div><div class="section-head"><div><h2>Historial de trabajo</h2><p class="muted">Incluye cargas hechas por Administración y por cada asociado.</p></div></div>
       <div class="table-wrap"><table><thead><tr><th>Socio</th><th>Fecha</th><th>Horas</th><th>Detalle</th><th>Tipo</th><th></th></tr></thead><tbody>
-        ${logs.map(x=>`<tr><td><strong>${esc(x.full_name)}</strong></td><td>${displayDate(x.work_date)}</td><td>${Number(x.hours).toLocaleString('es-AR')} h</td><td>${esc(x.description||'—')}</td><td>${x.special?'<span class="badge info">Domingo / feriado</span>':'Habitual'}</td><td><button class="danger" data-delete-work="${x.id}">Eliminar</button></td></tr>`).join('')}
+        ${logs.map(x=>`<tr><td><strong>${esc(x.full_name)}</strong></td><td>${displayDate(x.work_date)}</td><td>${Number(x.hours).toLocaleString('es-AR')} h</td><td>${esc(x.description||'—')}</td><td>${workTypeLabel(x.work_type,x.holiday_description)}</td><td><button class="danger" data-delete-work="${x.id}">Eliminar</button></td></tr>`).join('')}
       </tbody></table></div></div>
     </div>`;
   $('admin-work-date').value = new Date().toISOString().slice(0,10);
@@ -341,7 +374,18 @@ async function renderAdminAssembly() {
 
 async function renderAdminHistory() {
   const motions=await api('/api/motions?status=closed');
-  $('admin-historial').innerHTML=`<div class="section-head"><div><h2>Historial de asambleas</h2><p class="muted">Las mociones cerradas conservan un snapshot del padrón y de los votos.</p></div></div><div class="list">${motions.length?motions.map(m=>`<article class="motion-card"><div class="motion-head"><div><h3>${esc(m.title)}</h3><div class="helper">Cerrada: ${m.closed_at?new Date(m.closed_at).toLocaleString('es-AR'):'—'}</div></div><span class="badge ${m.result==='approved'?'':'off'}">${m.result==='approved'?'APROBADA':'RECHAZADA'}</span></div>${m.closed_snapshot?`<details style="margin-top:10px"><summary>Ver snapshot histórico</summary><pre class="history-json">${esc(JSON.stringify(m.closed_snapshot,null,2))}</pre></details>`:''}</article>`).join(''):'<div class="empty">Todavía no hay mociones cerradas.</div>'}</div>`;
+  $('admin-historial').innerHTML=`<div class="section-head"><div><h2>Historial de asambleas</h2><p class="muted">Las mociones cerradas conservan el padrón y los votos exactamente como estaban al momento del cierre.</p></div></div><div class="list">${motions.length?motions.map(m=>{
+    const s=m.closed_snapshot||{},t=s.tally||{},rows=historyVoteRows(s);
+    const eligible=Number(t.eligible||rows.length||0),emitted=Number(t.emitted||0),participation=eligible?emitted/eligible*100:0;
+    return `<article class="motion-card history-motion-card">
+      <div class="motion-head history-motion-head"><div><div class="history-meta"><span class="badge info">${historicalTypeLabel(m.motion_type)}</span><span class="helper">Moción #${m.id}</span></div><h3>${esc(m.title)}</h3><div class="helper">Cerrada: ${m.closed_at?new Date(m.closed_at).toLocaleString('es-AR'):'—'} · ${historicalRuleLabel(m.motion_type)}</div></div><span class="badge ${m.result==='approved'?'':'off'} history-result">${historicalResultLabel(m.result)}</span></div>
+      <div class="history-tally"><div><strong>${eligible}</strong><span>Habilitados</span></div><div><strong>${emitted}</strong><span>Emitidos</span></div><div><strong>${Number(t.in_favor||0)}</strong><span>A favor</span></div><div><strong>${Number(t.against||0)}</strong><span>En contra</span></div><div><strong>${Number(t.abstentions||0)}</strong><span>Abstenciones</span></div><div><strong>${participation.toLocaleString('es-AR',{maximumFractionDigits:1})}%</strong><span>Participación</span></div></div>
+      <div class="history-actions"><button class="secondary" data-history-toggle="${m.id}">Ver detalle histórico</button><button class="primary" data-export-motion-pdf="${m.id}">Exportar PDF</button></div>
+      <div id="history-detail-${m.id}" class="history-detail hidden"><div class="history-detail-head"><h3>Detalle de la votación</h3><p class="muted">Snapshot congelado al cierre; cambios posteriores en socios o autoridades no alteran este registro.</p></div><div class="table-wrap"><table class="history-votes-table"><thead><tr><th>Asociado</th><th>Rol/es al cierre</th><th>Voto</th><th>Fecha del voto</th></tr></thead><tbody>${rows.map(r=>`<tr><td><strong>${esc(r.fullName)}</strong></td><td>${esc(r.roles.join(', '))}</td><td><span class="history-vote ${r.vote==='A favor'?'favor':r.vote==='En contra'?'against':'abstention'}">${esc(r.vote)}</span></td><td>${r.createdAt?new Date(r.createdAt).toLocaleString('es-AR'):'—'}</td></tr>`).join('')}</tbody></table></div></div>
+    </article>`;
+  }).join(''):'<div class="empty">Todavía no hay mociones cerradas.</div>'}</div>`;
+  document.querySelectorAll('[data-history-toggle]').forEach(btn=>btn.addEventListener('click',()=>{const detail=$('history-detail-'+btn.dataset.historyToggle);const opening=detail.classList.contains('hidden');detail.classList.toggle('hidden');btn.textContent=opening?'Ocultar detalle':'Ver detalle histórico'}));
+  document.querySelectorAll('[data-export-motion-pdf]').forEach(btn=>btn.addEventListener('click',async()=>{const motion=motions.find(m=>String(m.id)===btn.dataset.exportMotionPdf);const old=btn.textContent;btn.disabled=true;btn.textContent='Generando PDF...';try{await downloadMotionPdf(btn.dataset.exportMotionPdf,motion?.title);notify('PDF histórico generado.')}catch(err){notify(err.message,'error')}finally{btn.disabled=false;btn.textContent=old}}));
 }
 
 async function getAssociateData() {
@@ -373,7 +417,7 @@ async function renderAssociateProfile() {
 
 async function renderAssociateHours() {
   const logs=await api('/api/work-logs');
-  $('assoc-horas').innerHTML=`<div class="split"><form id="assoc-hours-form" class="form-card"><h2>Registrar trabajo</h2><p class="muted">La carga queda vinculada automáticamente a tu usuario.</p><label>Fecha<input id="assoc-date" type="date" required></label><label>Horas<input id="assoc-hours" type="number" min="0.5" max="23.5" step="0.5" required></label><label>Descripción<textarea id="assoc-description" rows="3" maxlength="180"></textarea></label><div class="notice" style="margin-top:12px">No podés cargar horas para otro socio ni duplicar una fecha.</div><div class="actions"><button class="primary">Registrar horas</button></div></form><div><div class="section-head"><div><h2>Mis registros</h2><p class="muted">Estos mismos registros aparecen en Administración.</p></div></div><div class="list">${logs.length?logs.map(x=>`<article class="row-card"><div><strong>${displayDate(x.work_date)}</strong><div class="helper">${esc(x.description||'Sin detalle')}${x.special?' · Domingo / feriado':''}</div></div><strong>${Number(x.hours).toLocaleString('es-AR')} h</strong></article>`).join(''):'<div class="empty">Todavía no registraste horas.</div>'}</div></div></div>`;
+  $('assoc-horas').innerHTML=`<div class="split"><form id="assoc-hours-form" class="form-card"><h2>Registrar trabajo</h2><p class="muted">La carga queda vinculada automáticamente a tu usuario.</p><label>Fecha<input id="assoc-date" type="date" required></label><label>Horas<input id="assoc-hours" type="number" min="0.5" max="23.5" step="0.5" required></label><label>Descripción<textarea id="assoc-description" rows="3" maxlength="180"></textarea></label><div class="notice" style="margin-top:12px">No podés cargar horas para otro socio ni duplicar una fecha.</div><div class="actions"><button class="primary">Registrar horas</button></div></form><div><div class="section-head"><div><h2>Mis registros</h2><p class="muted">Estos mismos registros aparecen en Administración.</p></div></div><div class="list">${logs.length?logs.map(x=>`<article class="row-card"><div><strong>${displayDate(x.work_date)}</strong><div class="helper">${esc(x.description||'Sin detalle')} · ${esc(workTypeInline(x.work_type,x.holiday_description))}</div></div><strong>${Number(x.hours).toLocaleString('es-AR')} h</strong></article>`).join(''):'<div class="empty">Todavía no registraste horas.</div>'}</div></div></div>`;
   $('assoc-date').value=new Date().toISOString().slice(0,10);
   $('assoc-hours-form').addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/work-logs',{method:'POST',body:JSON.stringify({workDate:$('assoc-date').value,hours:Number($('assoc-hours').value),description:$('assoc-description').value})});notify('Horas registradas. Administración ya puede ver la carga.');await renderAssociateHours()}catch(err){notify(err.message,'error')}});
 }
