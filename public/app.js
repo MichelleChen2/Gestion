@@ -200,6 +200,9 @@ async function startApp() {
   state.poll = setInterval(() => {
     const tag=document.activeElement?.tagName;
     if (['INPUT','TEXTAREA','SELECT'].includes(tag) || document.visibilityState!=='visible') return;
+    // No refrescar la vista de Socios mientras el formulario de alta/reincorporación está abierto:
+    // un refresh durante la verificación asíncrona del PDF reemplazaba el formulario y borraba sus valores.
+    if (state.view==='admin-socios' && memberUiState.formOpen) return;
     refreshCurrentView(true).catch(()=>{});
   }, 3000);
 }
