@@ -461,18 +461,26 @@ async function renderAssociateHome() {
   $('assoc-inicio').innerHTML=`${alert}<div class="grid3"><div class="card"><div class="metric-label">Mis horas</div><div class="metric">${hours.toLocaleString('es-AR')} h</div></div><div class="card"><div class="metric-label">Mi retribución</div><div class="metric">${money(retribution.total)}</div></div><div class="card"><div class="metric-label">Mociones pendientes</div><div class="metric">${pending}</div></div></div><div class="card" style="margin-top:12px"><h2>Hola, ${esc(member.full_name.split(/\s+/)[0])}</h2><p class="muted">Desde este portal podés consultar tu perfil, cargar tus propias horas y votar las mociones abiertas.</p></div>`;
 }
 
-async function renderAssociateProfile() {
-  const [m,mono]=await Promise.all([getAssociateData(),api('/api/me/monotributo/status')]);
-  const pending=Math.max(0,Number(m.capital_subscribed)-Number(m.capital_integrated));
-  const roles=(m.roles||[]).length?(m.roles||[]):['Asociado'];
-  const d=mono.document;
-  const items=[['DNI',m.dni],['CUIT',m.cuit],['Correo',m.email],['Fecha de alta',displayDate(m.joined_on)],['Rol / cargos',roles.join(', ')],['Capital suscripto',money(m.capital_subscribed)],['Capital integrado',money(m.capital_integrated)],['Saldo pendiente',money(pending)]];
-  const statusHtml=d?`${monoBadge(d.validity_status,d.days_remaining)}<div class="mono-dates"><span>Emisión: <strong>${displayDate(d.issued_at)}</strong></span><span>Vencimiento: <strong>${displayDate(d.expires_at)}</strong></span></div>`:`<span class="badge info">Sin constancia almacenada</span>`;
-  const warning=d?.validity_status==='expired'?`<div class="expiry-alert danger-alert"><strong>Constancia vencida</strong><span>Venció el ${displayDate(d.expires_at)}. Subí una nueva para actualizar tu documentación.</span></div>`:d?.validity_status==='expiring'?`<div class="expiry-alert warning-alert"><strong>Tu constancia vence pronto</strong><span>Quedan ${d.days_remaining} día${Number(d.days_remaining)===1?'':'s'}.</span></div>`:'';
-  $('assoc-perfil').innerHTML=`${warning}<div class="card"><div class="section-head"><div><h2>${esc(m.full_name)}</h2><p class="muted">Información personal en modo lectura.</p></div><span class="badge">Activo</span></div><div class="info-grid">${items.map(([k,v])=>`<div class="info-item"><span>${esc(k)}</span><strong>${esc(v??'—')}</strong></div>`).join('')}</div></div><div class="card" style="margin-top:12px"><div class="section-head"><div><h2>Constancia de monotributo</h2><p class="muted">La renovación se verifica automáticamente: documento, CUIT y fecha de vencimiento comparada con la fecha actual.</p></div><div>${statusHtml}</div></div><div class="actions">${m.monotributo_stored?`<button class="secondary" id="assoc-download-monotributo">Descargar constancia actual</button>`:''}</div><hr class="divider"><label>Actualizar constancia (PDF)<input id="assoc-monotributo-file" type="file" accept="application/pdf,.pdf"></label><div class="helper">Máximo 5 MB. La constancia debe incluir una fecha de vencimiento legible; no se consulta ningún servicio externo.</div><div id="assoc-mono-upload-result" class="mono-result pending">Seleccioná un PDF para renovar la constancia.</div><div class="actions"><button class="primary" id="assoc-upload-monotributo">Verificar y actualizar constancia</button></div></div><div class="card" style="margin-top:12px"><div class="section-head"><div><h2>Seguridad</h2><p class="muted">Podés actualizar tu contraseña cuando lo necesites.</p></div></div><form id="assoc-password-form" class="form-grid"><label>Contraseña actual<input id="assoc-current-password" type="password" autocomplete="current-password" required></label><label>Nueva contraseña<input id="assoc-new-password" type="password" minlength="4" autocomplete="new-password" required></label><label>Repetir nueva contraseña<input id="assoc-confirm-password" type="password" minlength="4" autocomplete="new-password" required></label><div class="actions"><button class="primary" type="submit">Cambiar contraseña</button></div></form></div>`;
-  $('assoc-download-monotributo')?.addEventListener('click',async()=>{try{await downloadMonotributo(m.id,m.monotributo_file)}catch(err){notify(err.message,'error')}});
-  $('assoc-upload-monotributo').addEventListener('click',async()=>{const file=$('assoc-monotributo-file').files?.[0];const result=$('assoc-mono-upload-result');if(!file){result.className='mono-result bad';result.textContent='Seleccioná un archivo PDF.';return}if(file.size>5*1024*1024){result.className='mono-result bad';result.textContent='El PDF supera los 5 MB.';return}result.className='mono-result pending';result.textContent='Verificando constancia...';try{const extractedText=await extractPdfText(file);if(!String(extractedText||'').trim())throw new Error('No se pudo extraer texto del PDF. Probá con una constancia con texto seleccionable.');const contentBase64=await fileToBase64(file);const data=await api('/api/me/monotributo',{method:'POST',body:JSON.stringify({fileName:file.name,mimeType:file.type||'application/pdf',contentBase64,extractedText})});result.className='mono-result good';result.textContent=data.validation.message;notify('Constancia actualizada y verificada.');setTimeout(()=>renderAssociateProfile().catch(()=>{}),500)}catch(err){result.className='mono-result bad';result.textContent=err.message}});
-
+function openAssociatePasswordDialog() {
+  document.getElementById('associate-password-dialog')?.remove();
+  document.body.insertAdjacentHTML('beforeend',`
+    <dialog id="associate-password-dialog">
+      <div class="dialog-body" style="max-width:520px">
+        <div class="section-head">
+          <div><h2>Cambiar contraseña</h2><p class="muted">Ingresá tu contraseña actual y elegí una nueva.</p></div>
+          <button class="secondary" id="assoc-password-close" type="button">Cerrar</button>
+        </div>
+        <form id="assoc-password-form" class="form-grid">
+          <label>Contraseña actual<input id="assoc-current-password" type="password" autocomplete="current-password" required></label>
+          <label>Nueva contraseña<input id="assoc-new-password" type="password" minlength="4" autocomplete="new-password" required></label>
+          <label>Repetir nueva contraseña<input id="assoc-confirm-password" type="password" minlength="4" autocomplete="new-password" required></label>
+          <div class="actions"><button class="primary" type="submit">Guardar nueva contraseña</button></div>
+        </form>
+      </div>
+    </dialog>`);
+  const dialog=$('associate-password-dialog');
+  $('assoc-password-close').addEventListener('click',()=>dialog.close());
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
   $('assoc-password-form').addEventListener('submit',async e=>{
     e.preventDefault();
     const currentPassword=$('assoc-current-password').value;
@@ -482,11 +490,27 @@ async function renderAssociateProfile() {
     if(newPassword!==confirmPassword){notify('Las contraseñas nuevas no coinciden.','error');return}
     try{
       await api('/api/me/password',{method:'POST',body:JSON.stringify({currentPassword,newPassword})});
-      $('assoc-current-password').value='';$('assoc-new-password').value='';$('assoc-confirm-password').value='';
       state.user.mustChangePassword=false;persistUserState();
+      dialog.close();
       notify('Contraseña actualizada correctamente.');
     }catch(err){notify(err.message,'error')}
   });
+  dialog.showModal();
+}
+
+async function renderAssociateProfile() {
+  const [m,mono]=await Promise.all([getAssociateData(),api('/api/me/monotributo/status')]);
+  const pending=Math.max(0,Number(m.capital_subscribed)-Number(m.capital_integrated));
+  const roles=(m.roles||[]).length?(m.roles||[]):['Asociado'];
+  const d=mono.document;
+  const items=[['DNI',m.dni],['CUIT',m.cuit],['Correo',m.email],['Fecha de alta',displayDate(m.joined_on)],['Rol / cargos',roles.join(', ')],['Capital suscripto',money(m.capital_subscribed)],['Capital integrado',money(m.capital_integrated)],['Saldo pendiente',money(pending)]];
+  const statusHtml=d?`${monoBadge(d.validity_status,d.days_remaining)}<div class="mono-dates"><span>Emisión: <strong>${displayDate(d.issued_at)}</strong></span><span>Vencimiento: <strong>${displayDate(d.expires_at)}</strong></span></div>`:`<span class="badge info">Sin constancia almacenada</span>`;
+  const warning=d?.validity_status==='expired'?`<div class="expiry-alert danger-alert"><strong>Constancia vencida</strong><span>Venció el ${displayDate(d.expires_at)}. Subí una nueva para actualizar tu documentación.</span></div>`:d?.validity_status==='expiring'?`<div class="expiry-alert warning-alert"><strong>Tu constancia vence pronto</strong><span>Quedan ${d.days_remaining} día${Number(d.days_remaining)===1?'':'s'}.</span></div>`:'';
+  $('assoc-perfil').innerHTML=`${warning}<div class="card"><div class="section-head"><div><h2>${esc(m.full_name)}</h2><p class="muted">Información personal en modo lectura.</p></div><div class="profile-head-actions"><span class="badge">Activo</span><button class="secondary" id="assoc-open-password" type="button">Cambiar contraseña</button></div></div><div class="info-grid">${items.map(([k,v])=>`<div class="info-item"><span>${esc(k)}</span><strong>${esc(v??'—')}</strong></div>`).join('')}</div></div><div class="card" style="margin-top:12px"><div class="section-head"><div><h2>Constancia de monotributo</h2><p class="muted">La renovación se verifica automáticamente: documento, CUIT y fecha de vencimiento comparada con la fecha actual.</p></div><div>${statusHtml}</div></div><div class="actions">${m.monotributo_stored?`<button class="secondary" id="assoc-download-monotributo">Descargar constancia actual</button>`:''}</div><hr class="divider"><label>Actualizar constancia (PDF)<input id="assoc-monotributo-file" type="file" accept="application/pdf,.pdf"></label><div class="helper">Máximo 5 MB. La constancia debe incluir una fecha de vencimiento legible; no se consulta ningún servicio externo.</div><div id="assoc-mono-upload-result" class="mono-result pending">Seleccioná un PDF para renovar la constancia.</div><div class="actions"><button class="primary" id="assoc-upload-monotributo">Verificar y actualizar constancia</button></div></div>`;
+  $('assoc-download-monotributo')?.addEventListener('click',async()=>{try{await downloadMonotributo(m.id,m.monotributo_file)}catch(err){notify(err.message,'error')}});
+  $('assoc-upload-monotributo').addEventListener('click',async()=>{const file=$('assoc-monotributo-file').files?.[0];const result=$('assoc-mono-upload-result');if(!file){result.className='mono-result bad';result.textContent='Seleccioná un archivo PDF.';return}if(file.size>5*1024*1024){result.className='mono-result bad';result.textContent='El PDF supera los 5 MB.';return}result.className='mono-result pending';result.textContent='Verificando constancia...';try{const extractedText=await extractPdfText(file);if(!String(extractedText||'').trim())throw new Error('No se pudo extraer texto del PDF. Probá con una constancia con texto seleccionable.');const contentBase64=await fileToBase64(file);const data=await api('/api/me/monotributo',{method:'POST',body:JSON.stringify({fileName:file.name,mimeType:file.type||'application/pdf',contentBase64,extractedText})});result.className='mono-result good';result.textContent=data.validation.message;notify('Constancia actualizada y verificada.');setTimeout(()=>renderAssociateProfile().catch(()=>{}),500)}catch(err){result.className='mono-result bad';result.textContent=err.message}});
+
+  $('assoc-open-password').addEventListener('click',openAssociatePasswordDialog);
 }
 
 async function renderAssociateHours() {
