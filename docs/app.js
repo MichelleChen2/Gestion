@@ -124,6 +124,62 @@ function setSession(token, user) {
   sessionStorage.setItem('coopgestion_user', JSON.stringify(user));
 }
 
+
+function persistUserState() {
+  sessionStorage.setItem('coopgestion_user', JSON.stringify(state.user));
+}
+
+function showForcedPasswordChange() {
+  return new Promise((resolve) => {
+    $('login-screen').classList.add('hidden');
+    $('app').classList.add('hidden');
+    document.getElementById('forced-password-dialog')?.remove();
+    document.body.insertAdjacentHTML('beforeend', `
+      <dialog id="forced-password-dialog">
+        <div class="dialog-body" style="max-width:520px">
+          <h2>Actualizá tu contraseña</h2>
+          <p class="muted">Es tu primer ingreso con la contraseña temporal creada por Administración. Antes de continuar, elegí una contraseña personal.</p>
+          <div class="notice" style="margin:12px 0">Este cambio es obligatorio solo en el primer ingreso.</div>
+          <form id="forced-password-form" class="login-form">
+            <label>Nueva contraseña<input id="forced-new-password" type="password" minlength="4" autocomplete="new-password" required></label>
+            <label>Repetir nueva contraseña<input id="forced-confirm-password" type="password" minlength="4" autocomplete="new-password" required></label>
+            <div id="forced-password-error" class="login-error"></div>
+            <button class="primary" type="submit">Guardar nueva contraseña</button>
+            <button class="secondary" id="forced-password-logout" type="button">Cerrar sesión</button>
+          </form>
+        </div>
+      </dialog>`);
+    const dialog=$('forced-password-dialog');
+    dialog.addEventListener('cancel',e=>e.preventDefault());
+    $('forced-password-logout').addEventListener('click',()=>{dialog.close();dialog.remove();logout(false);resolve(false)});
+    $('forced-password-form').addEventListener('submit',async e=>{
+      e.preventDefault();
+      const error=$('forced-password-error');
+      error.style.display='none';
+      const next=$('forced-new-password').value;
+      const confirm=$('forced-confirm-password').value;
+      if(next.length<4){error.textContent='La contraseña debe tener al menos 4 caracteres.';error.style.display='block';return}
+      if(next!==confirm){error.textContent='Las contraseñas no coinciden.';error.style.display='block';return}
+      try{
+        await api('/api/me/password',{method:'POST',body:JSON.stringify({newPassword:next})});
+        state.user.mustChangePassword=false;
+        persistUserState();
+        dialog.close(); dialog.remove();
+        resolve(true);
+      }catch(err){error.textContent=err.message;error.style.display='block'}
+    });
+    dialog.showModal();
+  });
+}
+
+async function enterAuthenticatedApp() {
+  if (state.user?.role==='associate' && state.user?.mustChangePassword) {
+    const changed=await showForcedPasswordChange();
+    if(!changed) return;
+  }
+  await startApp();
+}
+
 function logout(show=true) {
   state.token=''; state.user=null; state.view='';
   sessionStorage.removeItem('coopgestion_token');
@@ -146,7 +202,7 @@ $('login-form').addEventListener('submit', async (event) => {
     });
     setSession(data.token, data.user);
     $('login-password').value='';
-    await startApp();
+    await enterAuthenticatedApp();
   } catch (err) {
     error.textContent = err.message;
     error.style.display='block';
@@ -264,7 +320,7 @@ async function renderAdminMembers() {
       <div class="capital-summary"><div><span>Mínimo requerido (5%)</span><strong id="minimum-contribution">$18.500</strong></div><div><span>Capital integrado</span><strong id="integrated-preview">$18.500</strong></div><div><span>Saldo pendiente</span><strong id="pending-preview">$351.500</strong></div></div>
       <hr class="divider"><h3>Monotributo</h3><div class="mono-upload-card"><label>Constancia de monotributo (PDF) *<input id="member-monotributo" type="file" accept="application/pdf,.pdf"><div class="helper">El sistema lee el PDF, compara el CUIT y contrasta la fecha de vencimiento del documento con la fecha actual.</div></label><div class="mono-check-card"><div><strong>Verificación automática</strong><div class="helper">Contenido + CUIT + vencimiento vs. fecha actual</div></div><button id="verify-monotributo" class="secondary" type="button">Verificar constancia</button></div><div id="member-mono-result" class="mono-result pending">Pendiente de verificación.</div></div>
       <div class="review-note"><div><strong>Revisión administrativa</strong><p>Después del alta queda pendiente hasta que un administrador la habilite.</p></div><span class="badge pending">Pendiente de revisión</span></div>
-      <div id="member-login-section"><hr class="divider"><h3>Acceso del asociado</h3><div class="form-grid"><label>Usuario *<input id="member-username" maxlength="80" placeholder="Ej. ana"></label><label>Contraseña inicial *<input id="member-password" type="password" minlength="4" placeholder="Mínimo 4 caracteres"></label></div><div class="notice" style="margin-top:12px">El usuario se crea deshabilitado y se activa al aprobar el alta.</div></div>
+      <div id="member-login-section"><hr class="divider"><h3>Acceso del asociado</h3><div class="form-grid"><label>Usuario *<input id="member-username" maxlength="80" placeholder="Ej. ana"></label><label>Contraseña temporal *<input id="member-password" type="password" minlength="4" placeholder="Mínimo 4 caracteres"></label></div><div class="notice" style="margin-top:12px">El usuario se crea deshabilitado y se activa al aprobar el alta. En su primer ingreso, el asociado deberá reemplazar esta contraseña temporal por una personal.</div></div>
       <div class="validation-box"><strong>Requisitos para completar</strong><ul id="member-validation-list"></ul></div><div class="actions"><button class="primary" type="submit">${memberUiState.reactivatingId?'Solicitar reincorporación':'Registrar alta'}</button></div>
     </form>
     <section class="authorities-panel"><div class="section-head"><div><h2>Autoridades de la cooperativa</h2><p class="muted">Los cargos deben permanecer asignados. El Presidente puede acumular Secretaría y/o Tesorería.</p></div><span class="badge info">3 cargos</span></div><div class="authority-grid">${authorityCards}</div></section>
@@ -416,9 +472,24 @@ async function renderAssociateProfile() {
   const items=[['DNI',m.dni],['CUIT',m.cuit],['Correo',m.email],['Fecha de alta',displayDate(m.joined_on)],['Rol / cargos',roles.join(', ')],['Capital suscripto',money(m.capital_subscribed)],['Capital integrado',money(m.capital_integrated)],['Saldo pendiente',money(pending)]];
   const statusHtml=d?`${monoBadge(d.validity_status,d.days_remaining)}<div class="mono-dates"><span>Emisión: <strong>${displayDate(d.issued_at)}</strong></span><span>Vencimiento: <strong>${displayDate(d.expires_at)}</strong></span></div>`:`<span class="badge info">Sin constancia almacenada</span>`;
   const warning=d?.validity_status==='expired'?`<div class="expiry-alert danger-alert"><strong>Constancia vencida</strong><span>Venció el ${displayDate(d.expires_at)}. Subí una nueva para actualizar tu documentación.</span></div>`:d?.validity_status==='expiring'?`<div class="expiry-alert warning-alert"><strong>Tu constancia vence pronto</strong><span>Quedan ${d.days_remaining} día${Number(d.days_remaining)===1?'':'s'}.</span></div>`:'';
-  $('assoc-perfil').innerHTML=`${warning}<div class="card"><div class="section-head"><div><h2>${esc(m.full_name)}</h2><p class="muted">Información personal en modo lectura.</p></div><span class="badge">Activo</span></div><div class="info-grid">${items.map(([k,v])=>`<div class="info-item"><span>${esc(k)}</span><strong>${esc(v??'—')}</strong></div>`).join('')}</div></div><div class="card" style="margin-top:12px"><div class="section-head"><div><h2>Constancia de monotributo</h2><p class="muted">La renovación se verifica automáticamente: documento, CUIT y fecha de vencimiento comparada con la fecha actual.</p></div><div>${statusHtml}</div></div><div class="actions">${m.monotributo_stored?`<button class="secondary" id="assoc-download-monotributo">Descargar constancia actual</button>`:''}</div><hr class="divider"><label>Actualizar constancia (PDF)<input id="assoc-monotributo-file" type="file" accept="application/pdf,.pdf"></label><div class="helper">Máximo 5 MB. La constancia debe incluir una fecha de vencimiento legible; no se consulta ningún servicio externo.</div><div id="assoc-mono-upload-result" class="mono-result pending">Seleccioná un PDF para renovar la constancia.</div><div class="actions"><button class="primary" id="assoc-upload-monotributo">Verificar y actualizar constancia</button></div></div>`;
+  $('assoc-perfil').innerHTML=`${warning}<div class="card"><div class="section-head"><div><h2>${esc(m.full_name)}</h2><p class="muted">Información personal en modo lectura.</p></div><span class="badge">Activo</span></div><div class="info-grid">${items.map(([k,v])=>`<div class="info-item"><span>${esc(k)}</span><strong>${esc(v??'—')}</strong></div>`).join('')}</div></div><div class="card" style="margin-top:12px"><div class="section-head"><div><h2>Constancia de monotributo</h2><p class="muted">La renovación se verifica automáticamente: documento, CUIT y fecha de vencimiento comparada con la fecha actual.</p></div><div>${statusHtml}</div></div><div class="actions">${m.monotributo_stored?`<button class="secondary" id="assoc-download-monotributo">Descargar constancia actual</button>`:''}</div><hr class="divider"><label>Actualizar constancia (PDF)<input id="assoc-monotributo-file" type="file" accept="application/pdf,.pdf"></label><div class="helper">Máximo 5 MB. La constancia debe incluir una fecha de vencimiento legible; no se consulta ningún servicio externo.</div><div id="assoc-mono-upload-result" class="mono-result pending">Seleccioná un PDF para renovar la constancia.</div><div class="actions"><button class="primary" id="assoc-upload-monotributo">Verificar y actualizar constancia</button></div></div><div class="card" style="margin-top:12px"><div class="section-head"><div><h2>Seguridad</h2><p class="muted">Podés actualizar tu contraseña cuando lo necesites.</p></div></div><form id="assoc-password-form" class="form-grid"><label>Contraseña actual<input id="assoc-current-password" type="password" autocomplete="current-password" required></label><label>Nueva contraseña<input id="assoc-new-password" type="password" minlength="4" autocomplete="new-password" required></label><label>Repetir nueva contraseña<input id="assoc-confirm-password" type="password" minlength="4" autocomplete="new-password" required></label><div class="actions"><button class="primary" type="submit">Cambiar contraseña</button></div></form></div>`;
   $('assoc-download-monotributo')?.addEventListener('click',async()=>{try{await downloadMonotributo(m.id,m.monotributo_file)}catch(err){notify(err.message,'error')}});
   $('assoc-upload-monotributo').addEventListener('click',async()=>{const file=$('assoc-monotributo-file').files?.[0];const result=$('assoc-mono-upload-result');if(!file){result.className='mono-result bad';result.textContent='Seleccioná un archivo PDF.';return}if(file.size>5*1024*1024){result.className='mono-result bad';result.textContent='El PDF supera los 5 MB.';return}result.className='mono-result pending';result.textContent='Verificando constancia...';try{const extractedText=await extractPdfText(file);if(!String(extractedText||'').trim())throw new Error('No se pudo extraer texto del PDF. Probá con una constancia con texto seleccionable.');const contentBase64=await fileToBase64(file);const data=await api('/api/me/monotributo',{method:'POST',body:JSON.stringify({fileName:file.name,mimeType:file.type||'application/pdf',contentBase64,extractedText})});result.className='mono-result good';result.textContent=data.validation.message;notify('Constancia actualizada y verificada.');setTimeout(()=>renderAssociateProfile().catch(()=>{}),500)}catch(err){result.className='mono-result bad';result.textContent=err.message}});
+
+  $('assoc-password-form').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const currentPassword=$('assoc-current-password').value;
+    const newPassword=$('assoc-new-password').value;
+    const confirmPassword=$('assoc-confirm-password').value;
+    if(newPassword.length<4){notify('La nueva contraseña debe tener al menos 4 caracteres.','error');return}
+    if(newPassword!==confirmPassword){notify('Las contraseñas nuevas no coinciden.','error');return}
+    try{
+      await api('/api/me/password',{method:'POST',body:JSON.stringify({currentPassword,newPassword})});
+      $('assoc-current-password').value='';$('assoc-new-password').value='';$('assoc-confirm-password').value='';
+      state.user.mustChangePassword=false;persistUserState();
+      notify('Contraseña actualizada correctamente.');
+    }catch(err){notify(err.message,'error')}
+  });
 }
 
 async function renderAssociateHours() {
@@ -440,4 +511,4 @@ async function renderAssociateAssembly() {
   document.querySelectorAll('[data-vote][data-motion]').forEach(btn=>btn.addEventListener('click',async()=>{try{await api(`/api/motions/${btn.dataset.motion}/vote`,{method:'POST',body:JSON.stringify({vote:btn.dataset.vote})});notify('Voto registrado. El cómputo de Administración ya fue actualizado.');await renderAssociateAssembly()}catch(err){notify(err.message,'error')}}));
 }
 
-if (state.token && state.user) startApp();
+if (state.token && state.user) enterAuthenticatedApp();

@@ -52,6 +52,7 @@ async function ensureRuntimeSchema() {
     ALTER TABLE member_documents ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;
     ALTER TABLE member_documents ADD COLUMN IF NOT EXISTS validation_details JSONB;
     ALTER TABLE member_documents ADD COLUMN IF NOT EXISTS is_current BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE;
     CREATE INDEX IF NOT EXISTS member_documents_member_type_idx
       ON member_documents(member_id, document_type, uploaded_at DESC);
   `);
@@ -302,7 +303,7 @@ app.post('/api/auth/login', async (req, res) => {
   if (!username || !password) return res.status(400).json({ error: 'Completá usuario y contraseña.' });
 
   const { rows } = await pool.query(`
-    SELECT u.id,u.username,u.role,u.member_id,u.display_name,u.enabled,
+    SELECT u.id,u.username,u.role,u.member_id,u.display_name,u.enabled,u.must_change_password,
            m.active,m.verification_pending
     FROM users u
     LEFT JOIN members m ON m.id=u.member_id
@@ -318,17 +319,52 @@ app.post('/api/auth/login', async (req, res) => {
 
   res.json({
     token: signUser(user),
-    user: { id: user.id, username: user.username, role: user.role, memberId: user.member_id, displayName: user.display_name }
+    user: { id: user.id, username: user.username, role: user.role, memberId: user.member_id, displayName: user.display_name, mustChangePassword: Boolean(user.must_change_password) }
   });
 });
 
 app.get('/api/me', auth, async (req, res) => {
   if (req.user.role === 'admin') {
-    return res.json({ role: 'admin', username: req.user.username, displayName: 'Administrador' });
+    return res.json({ role: 'admin', username: req.user.username, displayName: 'Administrador', mustChangePassword: false });
   }
   const member = await getMember(req.user.memberId);
   if (!member) return res.status(404).json({ error: 'Socio no encontrado.' });
-  res.json({ role: 'associate', member });
+  const { rows: userRows } = await pool.query('SELECT username,must_change_password FROM users WHERE id=$1',[req.user.userId]);
+  res.json({ role: 'associate', member, username: userRows[0]?.username || req.user.username, mustChangePassword: Boolean(userRows[0]?.must_change_password) });
+});
+
+
+app.post('/api/me/password', auth, requireRole('associate'), async (req, res) => {
+  const currentPassword = String(req.body.currentPassword || '');
+  const newPassword = String(req.body.newPassword || '');
+  if (newPassword.length < 4) return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 4 caracteres.' });
+
+  const { rows } = await pool.query(`
+    SELECT must_change_password,
+           password_hash=crypt($2,password_hash) AS current_ok,
+           password_hash=crypt($3,password_hash) AS same_as_current
+    FROM users
+    WHERE id=$1 AND role='associate' AND enabled=TRUE
+    LIMIT 1
+  `,[req.user.userId,currentPassword,newPassword]);
+  const user = rows[0];
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
+  if (!user.must_change_password && !currentPassword) {
+    return res.status(400).json({ error: 'Ingresá tu contraseña actual.' });
+  }
+  if (!user.must_change_password && !user.current_ok) {
+    return res.status(400).json({ error: 'La contraseña actual no es correcta.' });
+  }
+  if (user.same_as_current) {
+    return res.status(400).json({ error: 'La nueva contraseña debe ser diferente de la actual.' });
+  }
+
+  await pool.query(`
+    UPDATE users
+    SET password_hash=crypt($2,gen_salt('bf')), must_change_password=FALSE
+    WHERE id=$1
+  `,[req.user.userId,newPassword]);
+  res.json({ ok:true, mustChangePassword:false, message:'Contraseña actualizada correctamente.' });
 });
 
 app.get('/api/members', auth, requireRole('admin'), async (req, res) => {
@@ -375,13 +411,14 @@ async function ensureAssociateUser(client, memberId, username, password, display
       SET username=$2,
           password_hash=crypt($3, gen_salt('bf')),
           display_name=$4,
-          enabled=$5
+          enabled=$5,
+          must_change_password=TRUE
       WHERE member_id=$1
     `,[memberId,cleanUsername,cleanPassword,displayName,enabled]);
   } else {
     await client.query(`
-      INSERT INTO users(username,password_hash,role,member_id,display_name,enabled)
-      VALUES($1,crypt($2,gen_salt('bf')),'associate',$3,$4,$5)
+      INSERT INTO users(username,password_hash,role,member_id,display_name,enabled,must_change_password)
+      VALUES($1,crypt($2,gen_salt('bf')),'associate',$3,$4,$5,TRUE)
     `,[cleanUsername,cleanPassword,memberId,displayName,enabled]);
   }
 }

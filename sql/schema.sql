@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS users (
   member_id BIGINT UNIQUE REFERENCES members(id) ON DELETE CASCADE,
   display_name VARCHAR(120) NOT NULL,
   enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  must_change_password BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CHECK ((role = 'admin' AND member_id IS NULL) OR (role = 'associate' AND member_id IS NOT NULL))
 );

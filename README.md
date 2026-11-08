@@ -164,3 +164,7 @@ Las mociones cerradas ya no muestran el `closed_snapshot` como JSON. El historia
 
 La carpeta `docs/` está preparada para publicarse desde GitHub Pages (`entrega5-fix` → `/docs`).
 El login se mostrará correctamente porque los assets usan rutas relativas. Para conectar un backend desplegado, editar `docs/config.js` y definir `apiBaseUrl`. Ver `GITHUB_PAGES.md`.
+
+
+### Contraseñas de asociados
+Las credenciales creadas por Administración usan una contraseña temporal. Los asociados deben cambiarla en su primer ingreso y luego pueden actualizarla desde **Mi perfil > Seguridad**.
