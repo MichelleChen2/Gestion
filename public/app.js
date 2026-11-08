@@ -31,6 +31,7 @@ const displayDate = (v) => {
 };
 const initials = (name) => String(name || 'U').trim().split(/\s+/).slice(0,2).map(x => x[0] || '').join('').toUpperCase();
 
+const layoutUi = { members: 'list', retributions: 'payments' };
 const memberUiState={search:'',filter:'all',formOpen:false,reactivatingId:null,mono:{checked:false,valid:false,message:'Pendiente de verificación.',issuedAt:null,expiresAt:null,status:'unknown',daysRemaining:null,extractedText:''}};
 const digitsOnly=v=>String(v||'').replace(/\D/g,'');
 function formatCUIT(v){const d=digitsOnly(v).slice(0,11);if(d.length<=2)return d;if(d.length<=10)return d.slice(0,2)+'-'+d.slice(2);return d.slice(0,2)+'-'+d.slice(2,10)+'-'+d.slice(10)}
@@ -47,7 +48,7 @@ function renderMemberValidation(){const ul=$('member-validation-list');if(!ul)re
 function showMemberDetails(m){
   const roles=(m.roles||[]).length?m.roles:['Asociado'];
   const pending=Math.max(0,Number(m.capital_subscribed||0)-Number(m.capital_integrated||0));
-  const docStatus=m.monotributo_stored?'PDF guardado en PostgreSQL':(m.monotributo_file?'Solo nombre histórico; sin contenido binario':'No cargada');
+  const docStatus=m.monotributo_stored?'Constancia disponible para descargar':(m.monotributo_file?'Solo nombre histórico; sin contenido binario':'No cargada');
   document.body.insertAdjacentHTML('beforeend',`<dialog id="member-detail-dialog"><div class="dialog-body"><div class="section-head"><div><h2>${esc(m.full_name)}</h2><p class="muted">${esc(roles.join(' · '))}</p></div><button class="secondary" id="close-member-detail">Cerrar</button></div><div class="info-grid">${[['DNI',m.dni],['CUIT',m.cuit],['Correo',m.email||'—'],['Fecha de alta',displayDate(m.joined_on)],['Capital suscripto',money(m.capital_subscribed)],['Capital integrado',money(m.capital_integrated)],['Saldo pendiente',money(pending)],['Monotributo',m.monotributo_status],['Constancia',m.monotributo_file||'No cargada'],['Almacenamiento',docStatus],['Verificación automática',m.monotributo_auto_verified&&m.monotributo_cuit_matched?'PDF válido · CUIT coincidente':'Pendiente / no verificada'],['Emisión',displayDate(m.monotributo_issued_at)],['Vencimiento',displayDate(m.monotributo_expires_at)],['Vigencia',m.monotributo_validity_status==='expired'?'Vencida':m.monotributo_validity_status==='expiring'?`Vence en ${m.monotributo_days_remaining} días`:m.monotributo_validity_status==='valid'?'Vigente':'Sin determinar']].map(([k,v])=>`<div class="info-item"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join('')}</div>${m.monotributo_stored?`<div class="actions"><button class="secondary" id="download-member-monotributo">Descargar constancia PDF</button></div>`:''}</div></dialog>`);
   const d=$('member-detail-dialog');
   $('close-member-detail').onclick=()=>d.close();
@@ -132,7 +133,7 @@ function showForcedPasswordChange() {
     $('app').classList.add('hidden');
     document.getElementById('forced-password-dialog')?.remove();
     document.body.insertAdjacentHTML('beforeend', `
-      <dialog id="forced-password-dialog">
+      <dialog id="forced-password-dialog" class="password-dialog">
         <div class="dialog-body" style="max-width:520px">
           <h2>Actualizá tu contraseña</h2>
           <p class="muted">Es tu primer ingreso con la contraseña temporal creada por Administración. Antes de continuar, elegí una contraseña personal.</p>
@@ -216,13 +217,42 @@ const assocViews = [
 ];
 
 function buildNav() {
-  const views = state.user.role === 'admin' ? adminViews : assocViews;
-  $('sidebar-subtitle').textContent = state.user.role === 'admin' ? 'Administración' : 'Portal del asociado';
-  $('nav').innerHTML = views.map(([id,label]) => `<button type="button" data-view="${id}">${esc(label)}</button>`).join('') +
+  const admin = state.user.role === 'admin';
+  const groups = admin ? [
+    ['', adminViews.slice(0,1)], ['Gestión diaria', adminViews.slice(1,3)],
+    ['Economía', adminViews.slice(3,7)], ['Decisiones', adminViews.slice(7)]
+  ] : [['', assocViews]];
+  $('sidebar-subtitle').textContent = admin ? 'Administración' : 'Portal del asociado';
+  $('nav').innerHTML = groups.map(([title,views]) => `<div class="nav-group">${title?`<div class="nav-group-label">${title}</div>`:''}${views.map(([id,label])=>`<button type="button" data-view="${id}">${esc(label)}</button>`).join('')}</div>`).join('') +
     '<button type="button" id="logout" class="logout">Cerrar sesión</button>';
   $('nav').querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => go(btn.dataset.view)));
   $('logout').addEventListener('click', () => logout());
 }
+
+function bindSections(containerId, key) {
+  const container = $(containerId);
+  const select = value => {
+    layoutUi[key] = value;
+    container.querySelectorAll('[data-section-button]').forEach(b => {
+      const active = b.dataset.sectionButton === value;
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-pressed', String(active));
+    });
+    container.querySelectorAll('[data-section-content]').forEach(p => p.classList.toggle('hidden', p.dataset.sectionContent !== value));
+  };
+  container.querySelectorAll('[data-section-button]').forEach(b => b.addEventListener('click', () => select(b.dataset.sectionButton)));
+  select(layoutUi[key]);
+}
+
+// Keep unfinished forms and expanded details intact during background updates.
+document.addEventListener('input', event => {
+  const form = event.target.closest('form');
+  if (form) form.dataset.dirty = 'true';
+});
+document.addEventListener('change', event => {
+  const form = event.target.closest('form');
+  if (form) form.dataset.dirty = 'true';
+});
 
 function go(view) {
   state.view = view;
@@ -256,6 +286,7 @@ async function startApp() {
   state.poll = setInterval(() => {
     const tag=document.activeElement?.tagName;
     if (['INPUT','TEXTAREA','SELECT'].includes(tag) || document.visibilityState!=='visible') return;
+    if (document.querySelector('dialog[open], .panel.active form[data-dirty], .panel.active details[open], .panel.active .history-detail:not(.hidden)')) return;
     // No refrescar la vista de Socios mientras el formulario de alta/reincorporación está abierto:
     // un refresh durante la verificación asíncrona del PDF reemplazaba el formulario y borraba sus valores.
     if (state.view==='admin-socios' && memberUiState.formOpen) return;
@@ -297,7 +328,7 @@ async function renderAdminHome() {
       <div class="card"><div class="metric-label">Horas registradas</div><div class="metric">${hours.toLocaleString('es-AR')} h</div></div>
       <div class="card"><div class="metric-label">Retribuciones calculadas</div><div class="metric">${money(total)}</div></div>
     </div>
-    <div class="card" style="margin-top:12px"><h3>Actividad compartida</h3><p class="muted">Los asociados registran sus propias horas y votos desde su portal. Administración ve esos datos desde la misma base PostgreSQL.</p><div class="notice">Mociones abiertas: <strong>${motions.length}</strong></div></div>`;
+    <div class="card" style="margin-top:12px"><h3>Actividad compartida</h3><p class="muted">Consultá las horas registradas, las retribuciones y las decisiones de la cooperativa.</p><div class="notice">Mociones abiertas: <strong>${motions.length}</strong></div></div>`;
 }
 
 async function renderAdminMembers() {
@@ -306,10 +337,14 @@ async function renderAdminMembers() {
   const q=(memberUiState.search||'').toLowerCase();
   const filtered=members.filter(m=>{const statusOk=memberUiState.filter==='all'||(memberUiState.filter==='active'&&m.active&&!m.verification_pending)||(memberUiState.filter==='pending'&&m.verification_pending)||(memberUiState.filter==='inactive'&&!m.active&&!m.verification_pending);const hay=[m.full_name,m.dni,m.cuit,m.email,...(m.roles||[])].join(' ').toLowerCase();return statusOk&&(!q||hay.includes(q))});
   const active=members.filter(m=>m.active&&!m.verification_pending),byRole=Object.fromEntries(authorities.map(a=>[a.role,a]));
-  const authorityCards=['Presidente','Secretario','Tesorero'].map(role=>{const cur=byRole[role];return `<div class="authority-card"><div class="authority-icon">${role[0]}</div><div><div class="helper authority-label">${role}</div><strong>${esc(cur?.full_name||'Sin asignar')}</strong></div><select data-authority-role="${role}">${active.map(m=>`<option value="${m.id}" ${cur&&Number(cur.member_id)===Number(m.id)?'selected':''}>${esc(m.full_name)}${(m.roles||[]).length?` (${esc((m.roles||[]).join(', '))})`:''}</option>`).join('')}</select></div>`}).join('');
+  const authorityCards=['Presidente','Secretario','Tesorero'].map(role=>{const cur=byRole[role];return `<div class="authority-card"><div class="authority-icon">${role[0]}</div><div><div class="helper authority-label">${role}</div><strong>${esc(cur?.full_name||'Sin asignar')}</strong></div><select aria-label="Asignar ${role}" data-authority-role="${role}">${active.map(m=>`<option value="${m.id}" ${cur&&Number(cur.member_id)===Number(m.id)?'selected':''}>${esc(m.full_name)}${(m.roles||[]).length?` (${esc((m.roles||[]).join(', '))})`:''}</option>`).join('')}</select></div>`}).join('');
   $('admin-socios').innerHTML=`
-    <div class="members-intro"><div><h2>Gestión de socios</h2><p class="muted">Altas, capital social, verificación, autoridades y bajas guardadas en PostgreSQL.</p></div><div class="row-actions"><button id="show-member-form" class="primary">＋ Nuevo socio</button><button id="export-members" class="secondary">Exportar datos</button></div></div>
-    <section class="expiry-panel"><div class="section-head"><div><h2>Vencimientos de monotributo</h2><p class="muted">Alertas automáticas para constancias vencidas o que vencen dentro de ${monoAlerts.alertDays} días.</p></div><span class="badge ${monoAlerts.items.length?'pending':'info'}">${monoAlerts.items.length} requieren atención</span></div><div class="expiry-list">${monoAlerts.items.length?monoAlerts.items.map(x=>`<article class="expiry-row"><div><strong>${esc(x.full_name)}</strong><div class="helper">CUIT ${esc(x.cuit)} · Vence ${displayDate(x.expires_at)}</div></div><div>${monoBadge(x.status,x.days_remaining)}</div></article>`).join(''):'<div class="empty">No hay constancias próximas a vencer.</div>'}</div></section>
+    <div class="members-intro"><div><h2>Gestión de socios</h2><p class="muted">Consultá el padrón, revisá las altas y administrá la documentación de los socios.</p></div><div class="row-actions"><button id="show-member-form" class="primary">＋ Nuevo socio</button><button id="export-members" class="secondary">Exportar datos</button></div></div>
+    <nav class="section-nav" aria-label="Secciones de socios">
+      <button type="button" data-section-button="list">Socios <span>${members.length}</span></button>
+      <button type="button" data-section-button="authorities">Autoridades</button>
+      <button type="button" data-section-button="documents">Vencimientos <span class="${monoAlerts.items.length?'attention':''}">${monoAlerts.items.length}</span></button>
+    </nav>
     <form id="member-form" class="form-card ${memberUiState.formOpen?'':'hidden'}" novalidate>
       <div class="section-head"><div><h2>${memberUiState.reactivatingId?'Reincorporar socio':'Nuevo socio'}</h2><p class="muted">${memberUiState.reactivatingId?'Adjuntá una nueva constancia para iniciar la reincorporación.':'El alta queda pendiente hasta que Administración la apruebe.'}</p></div><button id="cancel-member" class="secondary" type="button">Cancelar</button></div>
       <div class="form-grid"><label>Nombre y apellido *<input id="member-name" maxlength="120"></label><label>DNI *<input id="member-dni" inputmode="numeric" maxlength="12"></label><label>CUIT *<input id="member-cuit" inputmode="numeric" maxlength="13"></label><label>Correo electrónico *<input id="member-email" type="email"></label></div>
@@ -320,14 +355,17 @@ async function renderAdminMembers() {
       <div id="member-login-section"><hr class="divider"><h3>Acceso del asociado</h3><div class="form-grid"><label>Usuario *<input id="member-username" maxlength="80" placeholder="Ej. ana"></label><label>Contraseña temporal *<input id="member-password" type="password" minlength="4" placeholder="Mínimo 4 caracteres"></label></div><div class="notice" style="margin-top:12px">El usuario se crea deshabilitado y se activa al aprobar el alta. En su primer ingreso, el asociado deberá reemplazar esta contraseña temporal por una personal.</div></div>
       <div class="validation-box"><strong>Requisitos para completar</strong><ul id="member-validation-list"></ul></div><div class="actions"><button class="primary" type="submit">${memberUiState.reactivatingId?'Solicitar reincorporación':'Registrar alta'}</button></div>
     </form>
-    <section class="authorities-panel"><div class="section-head"><div><h2>Autoridades de la cooperativa</h2><p class="muted">Los cargos deben permanecer asignados. El Presidente puede acumular Secretaría y/o Tesorería.</p></div><span class="badge info">3 cargos</span></div><div class="authority-grid">${authorityCards}</div></section>
-    <section class="member-list-panel"><div class="member-list-head"><div><h2>Listado de socios</h2><p class="muted">Buscá por nombre, DNI, CUIT, correo o cargo.</p></div><div class="member-filters"><input id="member-search" type="search" placeholder="Buscar socio" value="${esc(memberUiState.search)}"><select id="member-filter"><option value="all" ${memberUiState.filter==='all'?'selected':''}>Todos</option><option value="active" ${memberUiState.filter==='active'?'selected':''}>Activos</option><option value="pending" ${memberUiState.filter==='pending'?'selected':''}>Pendientes</option><option value="inactive" ${memberUiState.filter==='inactive'?'selected':''}>Bajas</option></select></div></div>
+    <section class="member-list-panel" data-section-content="list"><div class="member-list-head"><div><h2>Listado de socios</h2><p class="muted">Buscá por nombre, DNI, CUIT, correo o cargo.</p></div><div class="member-filters"><input id="member-search" aria-label="Buscar socio" type="search" placeholder="Buscar socio" value="${esc(memberUiState.search)}"><select id="member-filter" aria-label="Estado del socio"><option value="all" ${memberUiState.filter==='all'?'selected':''}>Todos</option><option value="active" ${memberUiState.filter==='active'?'selected':''}>Activos</option><option value="pending" ${memberUiState.filter==='pending'?'selected':''}>Pendientes</option><option value="inactive" ${memberUiState.filter==='inactive'?'selected':''}>Bajas</option></select></div></div>
       <div class="list">${filtered.length?filtered.map(m=>{const roles=(m.roles||[]).length?m.roles:['Asociado'],status=m.verification_pending?'Pendiente de verificación':m.active?'Activo':'Baja',statusClass=m.verification_pending?'pending':m.active?'':'off';return `<article class="member-row"><div class="member-avatar">${initials(m.full_name)}</div><div class="row-main"><div class="member-title"><strong>${esc(m.full_name)}</strong><span class="badge ${statusClass}">${status}</span>${m.monotributo_expires_at?monoBadge(m.monotributo_validity_status,m.monotributo_days_remaining):''}</div><div class="muted">${esc(m.email||'Sin correo')} · CUIT ${esc(m.cuit)}</div><div style="margin-top:7px">${roles.map(r=>`<span class="badge info">${esc(r)}</span>`).join(' ')}</div></div><div class="row-actions"><button class="secondary" data-member-detail="${m.id}">Ver detalle</button>${m.verification_pending?`<button class="primary" data-member-approve="${m.id}">Aprobar alta</button>`:''}${m.active&&!m.verification_pending?`<button class="danger" data-member-deactivate="${m.id}">Registrar baja</button>`:''}${!m.active&&!m.verification_pending?`<button class="secondary" data-member-reactivate="${m.id}">Reincorporar</button>`:''}</div></article>`}).join(''):'<div class="empty">No encontramos socios con esos filtros.</div>'}</div>
-    </section>`;
+    </section>
+    <section class="authorities-panel" data-section-content="authorities"><div class="section-head"><div><h2>Autoridades de la cooperativa</h2><p class="muted">Los cargos deben permanecer asignados. El Presidente puede acumular Secretaría y/o Tesorería.</p></div><span class="badge info">3 cargos</span></div><div class="authority-grid">${authorityCards}</div></section>
+    <section class="expiry-panel" data-section-content="documents"><div class="section-head"><div><h2>Vencimientos de monotributo</h2><p class="muted">Alertas automáticas para constancias vencidas o que vencen dentro de ${monoAlerts.alertDays} días.</p></div><span class="badge ${monoAlerts.items.length?'pending':'info'}">${monoAlerts.items.length} requieren atención</span></div><div class="expiry-list">${monoAlerts.items.length?monoAlerts.items.map(x=>`<article class="expiry-row"><div><strong>${esc(x.full_name)}</strong><div class="helper">CUIT ${esc(x.cuit)} · Vence ${displayDate(x.expires_at)}</div></div><div>${monoBadge(x.status,x.days_remaining)}</div></article>`).join(''):'<div class="empty">No hay constancias próximas a vencer.</div>'}</div></section>
+    `;
+  bindSections('admin-socios', 'members');
   renderMonoResult();if(memberUiState.formOpen)renderMemberValidation();
-  $('show-member-form').onclick=()=>{memberUiState.formOpen=true;memberUiState.reactivatingId=null;resetMono();renderAdminMembers()};
+  $('show-member-form').onclick=()=>{memberUiState.formOpen=true;memberUiState.reactivatingId=null;resetMono();layoutUi.members='list';renderAdminMembers().then(()=>$('member-name').focus())};
   $('cancel-member')?.addEventListener('click',()=>{memberUiState.formOpen=false;memberUiState.reactivatingId=null;resetMono();renderAdminMembers()});
-  $('member-search').oninput=e=>{memberUiState.search=e.target.value;renderAdminMembers()};$('member-filter').onchange=e=>{memberUiState.filter=e.target.value;renderAdminMembers()};
+  $('member-search').oninput=e=>{memberUiState.search=e.target.value;renderAdminMembers().then(()=>{const input=$('member-search');input.focus();input.setSelectionRange(input.value.length,input.value.length)})};$('member-filter').onchange=e=>{memberUiState.filter=e.target.value;renderAdminMembers()};
   $('export-members').onclick=()=>{const blob=new Blob([JSON.stringify(members,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='socios_coopgestion.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)};
   document.querySelectorAll('[data-authority-role]').forEach(sel=>sel.onchange=async()=>{try{await api('/api/authorities/'+encodeURIComponent(sel.dataset.authorityRole),{method:'PUT',body:JSON.stringify({memberId:Number(sel.value)})});notify('Autoridad actualizada.');await renderAdminMembers()}catch(err){notify(err.message,'error');await renderAdminMembers()}});
   if(memberUiState.formOpen){
@@ -348,7 +386,7 @@ async function renderAdminWork() {
   const [logs,members] = await Promise.all([api('/api/work-logs'),api('/api/members')]);
   const activeMembers = members.filter(m=>m.active&&!m.verification_pending);
   $('admin-trabajo').innerHTML = `
-    <div class="split">
+    <div class="split work-layout">
       <form id="admin-work-form" class="form-card">
         <h3>Registrar horas</h3><p class="muted">Administración también puede cargar horas manualmente.</p>
         <label>Socio<select id="admin-work-member">${activeMembers.map(m=>`<option value="${m.id}">${esc(m.full_name)}</option>`).join('')}</select></label>
@@ -379,16 +417,21 @@ async function renderAdminWork() {
 async function renderAdminRetributions() {
   const [cfg,rows] = await Promise.all([api('/api/retribution/settings'),api('/api/retributions')]);
   $('admin-retribuciones').innerHTML = `
-    <div class="grid2">
-      <form id="rate-form" class="form-card"><h3>Configuración</h3>
+    <nav class="section-nav" aria-label="Secciones de retribuciones">
+      <button type="button" data-section-button="payments">Liquidaciones</button>
+      <button type="button" data-section-button="settings">Tarifas y feriados</button>
+    </nav>
+    <div class="retribution-layout">
+      <form id="rate-form" data-section-content="settings" class="form-card"><h3>Tarifas por hora</h3><p class="muted">Definí los valores utilizados para calcular las retribuciones.</p>
         <div class="form-grid"><label>Valor hora habitual ($)<input id="normal-rate" type="number" min="0" step="100" value="${cfg.normal_rate}"></label><label>Domingo / feriado ($)<input id="special-rate" type="number" min="0" step="100" value="${cfg.special_rate}"></label></div>
         <div class="actions"><button class="primary">Guardar tarifas</button></div><hr class="divider">
         <h3>Feriados nacionales</h3><div class="form-grid"><label>Fecha<input id="holiday-date" type="date"></label><label>Descripción<input id="holiday-description" placeholder="Ej. Día de la Soberanía"></label></div><div class="actions"><button id="add-holiday" type="button" class="secondary">Agregar feriado</button></div>
-        <div class="list" style="margin-top:12px">${cfg.holidays.length?cfg.holidays.map(h=>`<div class="row-card"><div><strong>${displayDate(h.holiday_date)}</strong><div class="helper">${esc(h.description)}</div></div><button class="danger" data-holiday="${dateOnly(h.holiday_date)}">Quitar</button></div>`).join(''):'<div class="empty">No hay feriados cargados.</div>'}</div>
+        <div class="list" style="margin-top:12px">${cfg.holidays.length?cfg.holidays.map(h=>`<div class="row-card"><div><strong>${displayDate(h.holiday_date)}</strong><div class="helper">${esc(h.description)}</div></div><button class="danger" type="button" data-holiday="${dateOnly(h.holiday_date)}">Quitar</button></div>`).join(''):'<div class="empty">No hay feriados cargados.</div>'}</div>
       </form>
-      <div><div class="section-head"><div><h2>Retribuciones</h2><p class="muted">Cálculo sobre las horas guardadas en base de datos.</p></div></div>
+      <div data-section-content="payments"><div class="section-head"><div><h2>Liquidaciones de socios</h2><p class="muted">Consultá los importes y registrá las transferencias.</p></div></div>
       <div class="list">${rows.map(x=>`<article class="card"><div class="section-head"><div><strong>${esc(x.member.full_name)}</strong><div class="helper">${x.normal_hours} h habituales · ${x.special_hours} h especiales</div></div><div><strong>${money(x.total)}</strong></div></div><div class="helper">Habituales: ${money(x.normal_amount)} · Especiales: ${money(x.special_amount)}</div><div class="actions">${Number(x.transferred_amount)===Number(x.total)&&Number(x.total)>0?'<span class="badge">Transferencia registrada</span>':`<button class="primary" data-transfer="${x.member.id}">Registrar transferencia</button>`}</div></article>`).join('')}</div></div>
     </div>`;
+  bindSections('admin-retribuciones', 'retributions');
   $('rate-form').addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/retribution/settings',{method:'PUT',body:JSON.stringify({normalRate:Number($('normal-rate').value),specialRate:Number($('special-rate').value)})});notify('Tarifas actualizadas.');await renderAdminRetributions()}catch(err){notify(err.message,'error')}});
   $('add-holiday').addEventListener('click',async()=>{try{await api('/api/holidays',{method:'POST',body:JSON.stringify({date:$('holiday-date').value,description:$('holiday-description').value})});notify('Feriado agregado.');await renderAdminRetributions()}catch(err){notify(err.message,'error')}});
   document.querySelectorAll('[data-holiday]').forEach(btn=>btn.addEventListener('click',async()=>{try{await api('/api/holidays/'+btn.dataset.holiday,{method:'DELETE'});notify('Feriado eliminado.');await renderAdminRetributions()}catch(err){notify(err.message,'error')}}));
@@ -412,7 +455,7 @@ async function renderAdminWithdrawals(){
 
 async function renderAdminFunds(){
   const rows=await api('/api/fund-movements'),totals={};rows.forEach(x=>{totals[x.fund_name]=(totals[x.fund_name]||0)+(x.movement_type==='Ingreso'?1:-1)*Number(x.amount||0)});const names=[...new Set(['Fondo de reserva','Fondo operativo',...Object.keys(totals)])];
-  $('admin-fondos').innerHTML=`<div class="section-head"><div><h2>Fondos de la cooperativa</h2><p class="muted">Movimientos persistidos en PostgreSQL.</p></div></div><div class="grid3">${names.map(n=>`<div class="card"><div class="metric-label">${esc(n)}</div><div class="metric">${money(totals[n]||0)}</div></div>`).join('')}</div><form id="fund-form" class="form-card" style="margin-top:14px"><h3>Registrar movimiento de fondo</h3><div class="form-grid"><label>Fondo<input id="fund-name" value="Fondo de reserva" required></label><label>Tipo<select id="fund-type"><option>Ingreso</option><option>Egreso</option></select></label><label>Monto ($)<input id="fund-amount" type="number" min="1" step="100" required></label><label>Fecha<input id="fund-date" type="date" required></label><label style="grid-column:1/-1">Motivo<input id="fund-reason" maxlength="180"></label></div><div class="actions"><button class="primary">Registrar</button></div></form><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Fondo</th><th>Tipo</th><th>Monto</th><th>Motivo</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${displayDate(x.movement_date)}</td><td>${esc(x.fund_name)}</td><td>${esc(x.movement_type)}</td><td>${money(x.amount)}</td><td>${esc(x.reason||'—')}</td></tr>`).join('')}</tbody></table></div>`;
+  $('admin-fondos').innerHTML=`<div class="section-head"><div><h2>Fondos de la cooperativa</h2><p class="muted">Consultá los saldos y registrá los movimientos de cada fondo.</p></div></div><div class="grid3">${names.map(n=>`<div class="card"><div class="metric-label">${esc(n)}</div><div class="metric">${money(totals[n]||0)}</div></div>`).join('')}</div><form id="fund-form" class="form-card" style="margin-top:14px"><h3>Registrar movimiento de fondo</h3><div class="form-grid"><label>Fondo<input id="fund-name" value="Fondo de reserva" required></label><label>Tipo<select id="fund-type"><option>Ingreso</option><option>Egreso</option></select></label><label>Monto ($)<input id="fund-amount" type="number" min="1" step="100" required></label><label>Fecha<input id="fund-date" type="date" required></label><label style="grid-column:1/-1">Motivo<input id="fund-reason" maxlength="180"></label></div><div class="actions"><button class="primary">Registrar</button></div></form><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Fondo</th><th>Tipo</th><th>Monto</th><th>Motivo</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${displayDate(x.movement_date)}</td><td>${esc(x.fund_name)}</td><td>${esc(x.movement_type)}</td><td>${money(x.amount)}</td><td>${esc(x.reason||'—')}</td></tr>`).join('')}</tbody></table></div>`;
   $('fund-date').value=new Date().toISOString().slice(0,10);$('fund-form').onsubmit=async e=>{e.preventDefault();try{await api('/api/fund-movements',{method:'POST',body:JSON.stringify({fundName:$('fund-name').value,movementType:$('fund-type').value,amount:Number($('fund-amount').value),movementDate:$('fund-date').value,reason:$('fund-reason').value})});notify('Movimiento de fondo registrado.');await renderAdminFunds()}catch(err){notify(err.message,'error')}};
 }
 
@@ -425,7 +468,7 @@ async function renderAdminAssembly() {
   const motions=await api('/api/motions');
   $('admin-asamblea').innerHTML=`
     <form id="motion-form" class="form-card"><div class="section-head"><div><h2>Nueva moción</h2><p class="muted">El Administrador crea y cierra mociones; los votos los emiten los asociados.</p></div></div><div class="form-grid"><label>Título<input id="motion-title" required maxlength="220"></label><label>Tipo<select id="motion-type"><option value="ordinary">Ordinaria</option><option value="extraordinary">Extraordinaria</option></select></label></div><div class="actions"><button class="primary">Crear moción</button></div></form>
-    <div class="section-head"><div><h2>Mociones abiertas</h2><p class="muted">El cómputo se actualiza con los votos guardados en PostgreSQL.</p></div></div>
+    <div class="section-head"><div><h2>Mociones abiertas</h2><p class="muted">Seguí la participación y consultá los votos de cada moción.</p></div></div>
     <div class="list">${motions.length?motions.map(m=>`<article class="motion-card"><div class="motion-head"><div><h3>${esc(m.title)}</h3><div class="helper">${m.motion_type==='extraordinary'?'Mayoría especial ≥ 66%':'Mayoría simple > 50%'}</div></div><span class="badge info motion-type">${m.motion_type==='extraordinary'?'Extraordinaria':'Ordinaria'}</span></div>${tallyHtml(m)}<div class="actions">${m.complete?`<span class="badge ${m.computed_result==='approved'?'':'off'}">${m.computed_result==='approved'?'APROBADA':'RECHAZADA'}</span><button class="primary" data-close-motion="${m.id}">Cerrar moción</button>`:'<span class="badge pending">Esperando votos</span>'}</div>${m.votes?.length?`<details style="margin-top:10px"><summary>Ver votos emitidos</summary><div class="list" style="margin-top:8px">${m.votes.map(v=>`<div class="row-card"><span>${esc(v.full_name)}</span><strong>${esc(v.vote)}</strong></div>`).join('')}</div></details>`:''}</article>`).join(''):'<div class="empty">No hay mociones abiertas.</div>'}</div>`;
   $('motion-form').addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/motions',{method:'POST',body:JSON.stringify({title:$('motion-title').value,motionType:$('motion-type').value})});notify('Moción creada.');await renderAdminAssembly()}catch(err){notify(err.message,'error')}});
   document.querySelectorAll('[data-close-motion]').forEach(btn=>btn.addEventListener('click',async()=>{try{await api('/api/motions/'+btn.dataset.closeMotion+'/close',{method:'POST'});notify('Moción cerrada y guardada en historial.');await renderAdminAssembly()}catch(err){notify(err.message,'error')}}));
@@ -440,7 +483,7 @@ async function renderAdminHistory() {
       <div class="motion-head history-motion-head"><div><div class="history-meta"><span class="badge info">${historicalTypeLabel(m.motion_type)}</span><span class="helper">Moción #${m.id}</span></div><h3>${esc(m.title)}</h3><div class="helper">Cerrada: ${m.closed_at?new Date(m.closed_at).toLocaleString('es-AR'):'—'} · ${historicalRuleLabel(m.motion_type)}</div></div><span class="badge ${m.result==='approved'?'':'off'} history-result">${historicalResultLabel(m.result)}</span></div>
       <div class="history-tally"><div><strong>${eligible}</strong><span>Habilitados</span></div><div><strong>${emitted}</strong><span>Emitidos</span></div><div><strong>${Number(t.in_favor||0)}</strong><span>A favor</span></div><div><strong>${Number(t.against||0)}</strong><span>En contra</span></div><div><strong>${Number(t.abstentions||0)}</strong><span>Abstenciones</span></div><div><strong>${participation.toLocaleString('es-AR',{maximumFractionDigits:1})}%</strong><span>Participación</span></div></div>
       <div class="history-actions"><button class="secondary" data-history-toggle="${m.id}">Ver detalle histórico</button><button class="primary" data-export-motion-pdf="${m.id}">Exportar PDF</button></div>
-      <div id="history-detail-${m.id}" class="history-detail hidden"><div class="history-detail-head"><h3>Detalle de la votación</h3><p class="muted">Snapshot congelado al cierre; cambios posteriores en socios o autoridades no alteran este registro.</p></div><div class="table-wrap"><table class="history-votes-table"><thead><tr><th>Asociado</th><th>Rol/es al cierre</th><th>Voto</th><th>Fecha del voto</th></tr></thead><tbody>${rows.map(r=>`<tr><td><strong>${esc(r.fullName)}</strong></td><td>${esc(r.roles.join(', '))}</td><td><span class="history-vote ${r.vote==='A favor'?'favor':r.vote==='En contra'?'against':'abstention'}">${esc(r.vote)}</span></td><td>${r.createdAt?new Date(r.createdAt).toLocaleString('es-AR'):'—'}</td></tr>`).join('')}</tbody></table></div></div>
+      <div id="history-detail-${m.id}" class="history-detail hidden"><div class="history-detail-head"><h3>Detalle de la votación</h3><p class="muted">Padrón y votos registrados al cierre de la moción.</p></div><div class="table-wrap"><table class="history-votes-table"><thead><tr><th>Asociado</th><th>Rol/es al cierre</th><th>Voto</th><th>Fecha del voto</th></tr></thead><tbody>${rows.map(r=>`<tr><td><strong>${esc(r.fullName)}</strong></td><td>${esc(r.roles.join(', '))}</td><td><span class="history-vote ${r.vote==='A favor'?'favor':r.vote==='En contra'?'against':'abstention'}">${esc(r.vote)}</span></td><td>${r.createdAt?new Date(r.createdAt).toLocaleString('es-AR'):'—'}</td></tr>`).join('')}</tbody></table></div></div>
     </article>`;
   }).join(''):'<div class="empty">Todavía no hay mociones cerradas.</div>'}</div>`;
   document.querySelectorAll('[data-history-toggle]').forEach(btn=>btn.addEventListener('click',()=>{const detail=$('history-detail-'+btn.dataset.historyToggle);const opening=detail.classList.contains('hidden');detail.classList.toggle('hidden');btn.textContent=opening?'Ocultar detalle':'Ver detalle histórico'}));
@@ -464,13 +507,13 @@ async function renderAssociateHome() {
 function openAssociatePasswordDialog() {
   document.getElementById('associate-password-dialog')?.remove();
   document.body.insertAdjacentHTML('beforeend',`
-    <dialog id="associate-password-dialog">
+    <dialog id="associate-password-dialog" class="password-dialog">
       <div class="dialog-body" style="max-width:520px">
         <div class="section-head">
           <div><h2>Cambiar contraseña</h2><p class="muted">Ingresá tu contraseña actual y elegí una nueva.</p></div>
           <button class="secondary" id="assoc-password-close" type="button">Cerrar</button>
         </div>
-        <form id="assoc-password-form" class="form-grid">
+        <form id="assoc-password-form" class="password-form">
           <label>Contraseña actual<input id="assoc-current-password" type="password" autocomplete="current-password" required></label>
           <label>Nueva contraseña<input id="assoc-new-password" type="password" minlength="4" autocomplete="new-password" required></label>
           <label>Repetir nueva contraseña<input id="assoc-confirm-password" type="password" minlength="4" autocomplete="new-password" required></label>
@@ -506,7 +549,7 @@ async function renderAssociateProfile() {
   const items=[['DNI',m.dni],['CUIT',m.cuit],['Correo',m.email],['Fecha de alta',displayDate(m.joined_on)],['Rol / cargos',roles.join(', ')],['Capital suscripto',money(m.capital_subscribed)],['Capital integrado',money(m.capital_integrated)],['Saldo pendiente',money(pending)]];
   const statusHtml=d?`${monoBadge(d.validity_status,d.days_remaining)}<div class="mono-dates"><span>Emisión: <strong>${displayDate(d.issued_at)}</strong></span><span>Vencimiento: <strong>${displayDate(d.expires_at)}</strong></span></div>`:`<span class="badge info">Sin constancia almacenada</span>`;
   const warning=d?.validity_status==='expired'?`<div class="expiry-alert danger-alert"><strong>Constancia vencida</strong><span>Venció el ${displayDate(d.expires_at)}. Subí una nueva para actualizar tu documentación.</span></div>`:d?.validity_status==='expiring'?`<div class="expiry-alert warning-alert"><strong>Tu constancia vence pronto</strong><span>Quedan ${d.days_remaining} día${Number(d.days_remaining)===1?'':'s'}.</span></div>`:'';
-  $('assoc-perfil').innerHTML=`${warning}<div class="card"><div class="section-head"><div><h2>${esc(m.full_name)}</h2><p class="muted">Información personal en modo lectura.</p></div><div class="profile-head-actions"><span class="badge">Activo</span><button class="secondary" id="assoc-open-password" type="button">Cambiar contraseña</button></div></div><div class="info-grid">${items.map(([k,v])=>`<div class="info-item"><span>${esc(k)}</span><strong>${esc(v??'—')}</strong></div>`).join('')}</div></div><div class="card" style="margin-top:12px"><div class="section-head"><div><h2>Constancia de monotributo</h2><p class="muted">La renovación se verifica automáticamente: documento, CUIT y fecha de vencimiento comparada con la fecha actual.</p></div><div>${statusHtml}</div></div><div class="actions">${m.monotributo_stored?`<button class="secondary" id="assoc-download-monotributo">Descargar constancia actual</button>`:''}</div><hr class="divider"><label>Actualizar constancia (PDF)<input id="assoc-monotributo-file" type="file" accept="application/pdf,.pdf"></label><div class="helper">Máximo 5 MB. La constancia debe incluir una fecha de vencimiento legible; no se consulta ningún servicio externo.</div><div id="assoc-mono-upload-result" class="mono-result pending">Seleccioná un PDF para renovar la constancia.</div><div class="actions"><button class="primary" id="assoc-upload-monotributo">Verificar y actualizar constancia</button></div></div>`;
+  $('assoc-perfil').innerHTML=`${warning}<div class="card"><div class="section-head"><div><h2>${esc(m.full_name)}</h2><p class="muted">${esc(roles.join(' · '))} · Socio desde ${displayDate(m.joined_on)}</p></div><div class="profile-head-actions"><span class="badge">Activo</span><button class="secondary" id="assoc-open-password" type="button">Cambiar contraseña</button></div></div><h3 class="profile-section-title">Datos personales</h3><div class="info-grid">${items.slice(0,5).map(([k,v])=>`<div class="info-item"><span>${esc(k)}</span><strong>${esc(v??'—')}</strong></div>`).join('')}</div><hr class="divider"><h3 class="profile-section-title">Capital social</h3><div class="capital-summary">${items.slice(5).map(([k,v])=>`<div><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join('')}</div></div><div class="card" style="margin-top:12px"><div class="section-head"><div><h2>Constancia de monotributo</h2><p class="muted">Consultá la vigencia de tu documentación o subí una nueva constancia.</p></div><div>${statusHtml}</div></div><div class="actions">${m.monotributo_stored?`<button class="secondary" id="assoc-download-monotributo">Descargar constancia actual</button>`:''}</div><hr class="divider"><label>Actualizar constancia (PDF)<input id="assoc-monotributo-file" type="file" accept="application/pdf,.pdf"></label><div class="helper">Máximo 5 MB. La constancia debe incluir una fecha de vencimiento legible; no se consulta ningún servicio externo.</div><div id="assoc-mono-upload-result" class="mono-result pending">Seleccioná un PDF para renovar la constancia.</div><div class="actions"><button class="primary" id="assoc-upload-monotributo">Verificar y actualizar constancia</button></div></div>`;
   $('assoc-download-monotributo')?.addEventListener('click',async()=>{try{await downloadMonotributo(m.id,m.monotributo_file)}catch(err){notify(err.message,'error')}});
   $('assoc-upload-monotributo').addEventListener('click',async()=>{const file=$('assoc-monotributo-file').files?.[0];const result=$('assoc-mono-upload-result');if(!file){result.className='mono-result bad';result.textContent='Seleccioná un archivo PDF.';return}if(file.size>5*1024*1024){result.className='mono-result bad';result.textContent='El PDF supera los 5 MB.';return}result.className='mono-result pending';result.textContent='Verificando constancia...';try{const extractedText=await extractPdfText(file);if(!String(extractedText||'').trim())throw new Error('No se pudo extraer texto del PDF. Probá con una constancia con texto seleccionable.');const contentBase64=await fileToBase64(file);const data=await api('/api/me/monotributo',{method:'POST',body:JSON.stringify({fileName:file.name,mimeType:file.type||'application/pdf',contentBase64,extractedText})});result.className='mono-result good';result.textContent=data.validation.message;notify('Constancia actualizada y verificada.');setTimeout(()=>renderAssociateProfile().catch(()=>{}),500)}catch(err){result.className='mono-result bad';result.textContent=err.message}});
 
@@ -515,7 +558,7 @@ async function renderAssociateProfile() {
 
 async function renderAssociateHours() {
   const logs=await api('/api/work-logs');
-  $('assoc-horas').innerHTML=`<div class="split"><form id="assoc-hours-form" class="form-card"><h2>Registrar trabajo</h2><p class="muted">La carga queda vinculada automáticamente a tu usuario.</p><label>Fecha<input id="assoc-date" type="date" required></label><label>Horas<input id="assoc-hours" type="number" min="0.5" max="23.5" step="0.5" required></label><label>Descripción<textarea id="assoc-description" rows="3" maxlength="180"></textarea></label><div class="notice" style="margin-top:12px">No podés cargar horas para otro socio ni duplicar una fecha.</div><div class="actions"><button class="primary">Registrar horas</button></div></form><div><div class="section-head"><div><h2>Mis registros</h2><p class="muted">Estos mismos registros aparecen en Administración.</p></div></div><div class="list">${logs.length?logs.map(x=>`<article class="row-card"><div><strong>${displayDate(x.work_date)}</strong><div class="helper">${esc(x.description||'Sin detalle')} · ${esc(workTypeInline(x.work_type,x.holiday_description))}</div></div><strong>${Number(x.hours).toLocaleString('es-AR')} h</strong></article>`).join(''):'<div class="empty">Todavía no registraste horas.</div>'}</div></div></div>`;
+  $('assoc-horas').innerHTML=`<div class="split work-layout"><form id="assoc-hours-form" class="form-card"><h2>Registrar trabajo</h2><p class="muted">La carga queda vinculada automáticamente a tu usuario.</p><label>Fecha<input id="assoc-date" type="date" required></label><label>Horas<input id="assoc-hours" type="number" min="0.5" max="23.5" step="0.5" required></label><label>Descripción<textarea id="assoc-description" rows="3" maxlength="180"></textarea></label><div class="notice" style="margin-top:12px">No podés cargar horas para otro socio ni duplicar una fecha.</div><div class="actions"><button class="primary">Registrar horas</button></div></form><div><div class="section-head"><div><h2>Mis registros</h2><p class="muted">Estos mismos registros aparecen en Administración.</p></div></div><div class="list">${logs.length?logs.map(x=>`<article class="row-card"><div><strong>${displayDate(x.work_date)}</strong><div class="helper">${esc(x.description||'Sin detalle')} · ${esc(workTypeInline(x.work_type,x.holiday_description))}</div></div><strong>${Number(x.hours).toLocaleString('es-AR')} h</strong></article>`).join(''):'<div class="empty">Todavía no registraste horas.</div>'}</div></div></div>`;
   $('assoc-date').value=new Date().toISOString().slice(0,10);
   $('assoc-hours-form').addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/work-logs',{method:'POST',body:JSON.stringify({workDate:$('assoc-date').value,hours:Number($('assoc-hours').value),description:$('assoc-description').value})});notify('Horas registradas. Administración ya puede ver la carga.');await renderAssociateHours()}catch(err){notify(err.message,'error')}});
 }
