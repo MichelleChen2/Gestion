@@ -158,3 +158,9 @@ La API usa `pdf-parse` en servidor. Algunos PDFs pueden ser legibles por PDF.js 
 ## Historial de asambleas y exportación PDF
 
 Las mociones cerradas ya no muestran el `closed_snapshot` como JSON. El historial presenta el resultado, tipo, regla de mayoría, fecha de cierre, cómputo final y una tabla de votos por asociado con los roles congelados al cierre. Administración puede exportar un PDF detallado generado por el backend a partir del snapshot histórico.
+
+
+## GitHub Pages (frontend)
+
+La carpeta `docs/` está preparada para publicarse desde GitHub Pages (`entrega5-fix` → `/docs`).
+El login se mostrará correctamente porque los assets usan rutas relativas. Para conectar un backend desplegado, editar `docs/config.js` y definir `apiBaseUrl`. Ver `GITHUB_PAGES.md`.
