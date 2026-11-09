@@ -693,8 +693,8 @@ app.post('/api/work-logs', auth, async (req, res) => {
 
 app.post('/api/work-logs/bulk', auth, requireRole('admin'), async (req, res) => {
   const entries = Array.isArray(req.body.entries) ? req.body.entries : [];
-  if (!entries.length) return res.status(400).json({ error: 'Agregá al menos un registro para la carga masiva.' });
-  if (entries.length > 200) return res.status(400).json({ error: 'La carga masiva admite hasta 200 registros por vez.' });
+  if (!entries.length) return res.status(400).json({ error: 'Agregá al menos un registro.' });
+  if (entries.length > 200) return res.status(400).json({ error: 'Podés registrar hasta 200 filas por vez.' });
 
   const results = [];
   const seen = new Set();
@@ -711,7 +711,7 @@ app.post('/api/work-logs/bulk', auth, requireRole('admin'), async (req, res) => 
       continue;
     }
     if (seen.has(key)) {
-      results.push({ index, ok: false, memberId, workDate, error: 'El mismo socio y fecha están repetidos dentro de la carga.' });
+      results.push({ index, ok: false, memberId, workDate, error: 'El mismo socio y fecha están repetidos en este registro.' });
       continue;
     }
     seen.add(key);
@@ -728,7 +728,7 @@ app.post('/api/work-logs/bulk', auth, requireRole('admin'), async (req, res) => 
         VALUES($1,$2,$3,$4)
         RETURNING id,member_id,work_date,hours::float8,description,created_at
       `, [memberId, workDate, hours, description || null]);
-      results.push({ index, ok: true, memberId, workDate, record: rows[0] });
+      results.push({ index, ok: true, memberId, workDate, row: rows[0] });
     } catch (err) {
       if (err.code === '23505') {
         results.push({ index, ok: false, memberId, workDate, error: 'Ya existe una carga para ese socio en esa fecha.' });
@@ -741,7 +741,6 @@ app.post('/api/work-logs/bulk', auth, requireRole('admin'), async (req, res) => 
   const successCount = results.filter(x => x.ok).length;
   res.json({ successCount, failureCount: results.length - successCount, results });
 });
-
 
 app.delete('/api/work-logs/:id', auth, requireRole('admin'), async (req, res) => {
   await pool.query('DELETE FROM work_logs WHERE id=$1', [req.params.id]);
