@@ -144,3 +144,26 @@ summary{cursor:pointer}
 .multiple-work-status .good{color:var(--ok)}
 .multiple-work-status .bad{color:var(--danger)}
 @media(max-width:700px){.multiple-work-dialog{width:calc(100% - 16px);height:92vh;max-height:92vh}.multiple-work-dialog-body{padding:14px}.multiple-work-toolbar{align-items:stretch}.multiple-file-label{width:100%}.multiple-work-footer{justify-content:stretch}.multiple-work-footer button{flex:1}}
+
+
+/* Reporte de gestión: resumen financiero y operativo, manteniendo la UI reorganizada. */
+.report-title-row{align-items:center}.report-period-card{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;background:var(--soft);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px}.report-period-card label{min-width:180px}.report-period-card input{margin-top:5px}.report-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.report-metrics .card{padding:16px}.report-metrics .helper{margin-top:5px}.report-secondary-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0 18px}.report-secondary-metrics>div{display:flex;flex-direction:column;gap:3px;background:var(--soft);border:1px solid var(--border);border-radius:10px;padding:12px}.report-secondary-metrics span,.report-secondary-metrics small{font-size:12px;color:var(--muted)}.report-secondary-metrics strong{font-size:18px}.report-columns{display:grid;grid-template-columns:1.35fr 1fr;gap:12px;margin-bottom:12px}.report-card{padding:18px;margin-bottom:12px}.report-card h3{margin:0}.report-work-breakdown{display:grid;gap:13px}.report-breakdown-label{display:flex;justify-content:space-between;gap:12px;font-size:13px}.report-bar,.report-member-bar{height:7px;border-radius:999px;background:#e2e8f0;overflow:hidden;margin-top:5px}.report-bar span,.report-member-bar span{display:block;height:100%;border-radius:999px;background:var(--accent)}.report-note{margin-top:14px}.report-fund-list{display:grid;gap:8px}.report-fund-list>div:not(.empty){display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}.report-fund-list>div:last-child{border-bottom:0}.report-member-list{display:grid;gap:2px}.report-member-row{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:18px;padding:10px 0;border-bottom:1px solid var(--border)}.report-member-row:last-child{border-bottom:0}.report-member-row>div:first-child{display:flex;flex-direction:column;gap:2px}.report-member-row span{font-size:12px;color:var(--muted)}.report-member-total{font-weight:750}.report-member-bar{grid-column:1/-1}.report-card .table-wrap{margin-top:4px}
+@media(max-width:1100px){.report-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.report-secondary-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.report-columns{grid-template-columns:1fr}.report-period-card{align-items:stretch}.report-period-card label{min-width:0;flex:1 1 150px}.report-period-card button{width:100%}.report-title-row{align-items:flex-start}.report-title-row>button{width:100%}}
+@media(max-width:520px){.report-metrics,.report-secondary-metrics{grid-template-columns:1fr}.report-member-row{grid-template-columns:1fr}.report-member-total{margin-top:4px}.report-title-row{flex-direction:column}}
+
+
+/* Historial de trabajo paginado */
+.work-history-section{min-width:0}
+.work-history-count{display:inline-flex;align-items:center;white-space:nowrap;background:var(--soft);border:1px solid var(--border);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:750;color:var(--muted)}
+.work-history-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) 160px 110px auto;gap:10px;align-items:end;margin-bottom:12px;padding:12px;background:var(--soft);border:1px solid var(--border);border-radius:12px}
+.work-history-toolbar input,.work-history-toolbar select{margin-top:5px}
+.work-history-filter-actions{display:flex;gap:8px;align-items:center}
+.work-history-page-size-note{display:flex;align-items:center;min-height:38px;padding-bottom:2px}
+.work-history-table{overflow-x:auto;overflow-y:visible}
+.work-history-empty{margin:8px 0}
+.work-history-pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px}
+.work-history-page-controls{display:flex;align-items:center;gap:10px;font-size:13px}
+.work-history-page-controls button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:900px){.work-history-toolbar{grid-template-columns:1fr 1fr}.work-history-search{grid-column:1/-1}.work-history-filter-actions{justify-content:flex-end}.work-history-pagination{align-items:flex-start;flex-direction:column}}
+@media(max-width:600px){.work-history-toolbar{grid-template-columns:1fr}.work-history-search{grid-column:auto}.work-history-filter-actions{justify-content:stretch}.work-history-filter-actions button{flex:1}.work-history-page-controls{width:100%;justify-content:space-between}.work-history-page-controls span{white-space:nowrap}}

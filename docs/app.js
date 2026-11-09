@@ -26,6 +26,8 @@ const workTypeInline = (workType, holidayDescription='') => {
   return 'Habitual';
 };
 
+const adminWorkHistoryState = { page: 1, pageSize: 5, search: '', type: 'all' };
+
 
 function parseCsvMatrix(text) {
   const normalized = String(text || '').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
@@ -188,6 +190,7 @@ const displayDate = (v) => {
 const initials = (name) => String(name || 'U').trim().split(/\s+/).slice(0,2).map(x => x[0] || '').join('').toUpperCase();
 
 const layoutUi = { members: 'list', retributions: 'payments' };
+const reportUiState = { from:'', to:'' };
 const memberUiState={search:'',filter:'all',formOpen:false,reactivatingId:null,mono:{checked:false,valid:false,message:'Pendiente de verificación.',issuedAt:null,expiresAt:null,status:'unknown',daysRemaining:null,extractedText:''}};
 const digitsOnly=v=>String(v||'').replace(/\D/g,'');
 function formatCUIT(v){const d=digitsOnly(v).slice(0,11);if(d.length<=2)return d;if(d.length<=10)return d.slice(0,2)+'-'+d.slice(2);return d.slice(0,2)+'-'+d.slice(2,10)+'-'+d.slice(10)}
@@ -237,6 +240,13 @@ async function downloadMotionPdf(motionId,title='mocion'){
   const safe=String(title||'mocion').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60)||'mocion';
   a.href=url;a.download=`mocion-${safe}.pdf`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+async function downloadAdminReportPdf(from,to){
+  const response=await fetch(apiUrl(`/api/admin-report/report.pdf?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),{headers:{Authorization:`Bearer ${state.token}`}});
+  if(!response.ok){let data=null;try{data=await response.json()}catch(_){};throw new Error(data?.error||`Error ${response.status}`)}
+  const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=`reporte-gestion-${from}-a-${to}.pdf`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
 function historicalResultLabel(result){return result==='approved'?'APROBADA':'RECHAZADA'}
 function historicalTypeLabel(type){return type==='extraordinary'?'Extraordinaria':'Ordinaria'}
 function historicalRuleLabel(type){return type==='extraordinary'?'Mayoría especial ≥ 66%':'Mayoría simple > 50%'}
@@ -365,7 +375,7 @@ $('login-form').addEventListener('submit', async (event) => {
 
 const adminViews = [
   ['admin-inicio','Inicio'],['admin-socios','Socios y aportes'],['admin-trabajo','Trabajo'],
-  ['admin-retribuciones','Retribuciones'],['admin-finanzas','Ingresos y gastos'],['admin-retiros','Retiros y excedentes'],['admin-fondos','Fondos'],['admin-asamblea','Asamblea'],['admin-historial','Historial de asambleas']
+  ['admin-retribuciones','Retribuciones'],['admin-finanzas','Ingresos y gastos'],['admin-retiros','Retiros y excedentes'],['admin-fondos','Fondos'],['admin-reporte','Reporte de gestión'],['admin-asamblea','Asamblea'],['admin-historial','Historial de asambleas']
 ];
 const assocViews = [
   ['assoc-inicio','Inicio'],['assoc-perfil','Mi perfil'],['assoc-horas','Mis horas'],
@@ -376,7 +386,7 @@ function buildNav() {
   const admin = state.user.role === 'admin';
   const groups = admin ? [
     ['', adminViews.slice(0,1)], ['Gestión diaria', adminViews.slice(1,3)],
-    ['Economía', adminViews.slice(3,7)], ['Decisiones', adminViews.slice(7)]
+    ['Economía', adminViews.slice(3,8)], ['Decisiones', adminViews.slice(8)]
   ] : [['', assocViews]];
   $('sidebar-subtitle').textContent = admin ? 'Administración' : 'Portal del asociado';
   $('nav').innerHTML = groups.map(([title,views]) => `<div class="nav-group">${title?`<div class="nav-group-label">${title}</div>`:''}${views.map(([id,label])=>`<button type="button" data-view="${id}">${esc(label)}</button>`).join('')}</div>`).join('') +
@@ -460,6 +470,7 @@ async function refreshCurrentView(silent=false) {
     'admin-finanzas': renderAdminFinance,
     'admin-retiros': renderAdminWithdrawals,
     'admin-fondos': renderAdminFunds,
+    'admin-reporte': renderAdminReport,
     'admin-asamblea': renderAdminAssembly,
     'admin-historial': renderAdminHistory,
     'assoc-inicio': renderAssociateHome,
@@ -539,8 +550,19 @@ async function renderAdminMembers() {
 }
 
 async function renderAdminWork() {
-  const [logs,members] = await Promise.all([api('/api/work-logs'),api('/api/members')]);
+  const query = new URLSearchParams({
+    paginated: '1',
+    page: String(adminWorkHistoryState.page),
+    pageSize: String(adminWorkHistoryState.pageSize),
+    search: adminWorkHistoryState.search,
+    type: adminWorkHistoryState.type
+  });
+  const [history,members] = await Promise.all([api('/api/work-logs?'+query.toString()),api('/api/members')]);
+  const logs = history.items || [];
+  adminWorkHistoryState.page = history.page || 1;
   const activeMembers = members.filter(m=>m.active&&!m.verification_pending);
+  const from = history.total ? ((history.page-1)*history.pageSize)+1 : 0;
+  const to = history.total ? Math.min(history.page*history.pageSize,history.total) : 0;
   $('admin-trabajo').innerHTML = `
     <div class="split work-layout">
       <form id="admin-work-form" class="form-card">
@@ -551,10 +573,22 @@ async function renderAdminWork() {
         <label>Descripción<textarea id="admin-work-description" rows="2" maxlength="180"></textarea></label>
         <div class="actions"><button class="primary">Registrar</button><button class="secondary" id="open-multiple-work" type="button">Registro múltiple</button></div>
       </form>
-      <div><div class="section-head"><div><h2>Historial de trabajo</h2><p class="muted">Incluye cargas hechas por Administración y por cada asociado.</p></div></div>
-      <div class="table-wrap"><table><thead><tr><th>Socio</th><th>Fecha</th><th>Horas</th><th>Detalle</th><th>Tipo</th><th></th></tr></thead><tbody>
-        ${logs.map(x=>`<tr><td><strong>${esc(x.full_name)}</strong></td><td>${displayDate(x.work_date)}</td><td>${Number(x.hours).toLocaleString('es-AR')} h</td><td>${esc(x.description||'—')}</td><td>${workTypeLabel(x.work_type,x.holiday_description)}</td><td><button class="danger" data-delete-work="${x.id}">Eliminar</button></td></tr>`).join('')}
-      </tbody></table></div></div>
+      <div class="work-history-section">
+        <div class="section-head"><div><h2>Historial de trabajo</h2><p class="muted">Incluye cargas hechas por Administración y por cada asociado.</p></div><span class="work-history-count">${history.total} registros</span></div>
+        <form id="work-history-filter" class="work-history-toolbar">
+          <label class="work-history-search">Buscar asociado<input id="work-history-search" type="search" placeholder="Nombre del asociado" value="${esc(adminWorkHistoryState.search)}"></label>
+          <label>Tipo<select id="work-history-type"><option value="all" ${adminWorkHistoryState.type==='all'?'selected':''}>Todos</option><option value="regular" ${adminWorkHistoryState.type==='regular'?'selected':''}>Habitual</option><option value="sunday" ${adminWorkHistoryState.type==='sunday'?'selected':''}>Domingo</option><option value="holiday" ${adminWorkHistoryState.type==='holiday'?'selected':''}>Feriado</option></select></label>
+          <div class="work-history-page-size-note"><span class="helper">5 registros por página</span></div>
+          <div class="work-history-filter-actions"><button class="secondary" type="submit">Aplicar</button><button class="secondary" id="work-history-clear" type="button">Limpiar</button></div>
+        </form>
+        <div class="table-wrap work-history-table"><table><thead><tr><th>Socio</th><th>Fecha</th><th>Horas</th><th>Detalle</th><th>Tipo</th><th></th></tr></thead><tbody>
+          ${logs.length?logs.map(x=>`<tr><td><strong>${esc(x.full_name)}</strong></td><td>${displayDate(x.work_date)}</td><td>${Number(x.hours).toLocaleString('es-AR')} h</td><td>${esc(x.description||'—')}</td><td>${workTypeLabel(x.work_type,x.holiday_description)}</td><td><button class="danger" data-delete-work="${x.id}">Eliminar</button></td></tr>`).join(''):`<tr><td colspan="6"><div class="empty work-history-empty">No hay registros que coincidan con los filtros.</div></td></tr>`}
+        </tbody></table></div>
+        <div class="work-history-pagination">
+          <span class="muted">Mostrando ${from}–${to} de ${history.total}</span>
+          <div class="work-history-page-controls"><button class="secondary" id="work-history-prev" type="button" ${history.page<=1?'disabled':''}>Anterior</button><span>Página <strong>${history.page}</strong> de ${history.totalPages}</span><button class="secondary" id="work-history-next" type="button" ${history.page>=history.totalPages?'disabled':''}>Siguiente</button></div>
+        </div>
+      </div>
     </div>`;
   $('admin-work-date').value = new Date().toISOString().slice(0,10);
   $('open-multiple-work').onclick = () => openMultipleWorkDialog(activeMembers);
@@ -562,9 +596,23 @@ async function renderAdminWork() {
     e.preventDefault();
     try {
       await api('/api/work-logs',{method:'POST',body:JSON.stringify({memberId:Number($('admin-work-member').value),workDate:$('admin-work-date').value,hours:Number($('admin-work-hours').value),description:$('admin-work-description').value})});
-      notify('Horas registradas.'); await renderAdminWork();
+      notify('Horas registradas.'); adminWorkHistoryState.page=1; await renderAdminWork();
     } catch(err){notify(err.message,'error')}
   });
+  $('work-history-filter').addEventListener('submit',async e=>{
+    e.preventDefault();
+    adminWorkHistoryState.search=$('work-history-search').value.trim();
+    adminWorkHistoryState.type=$('work-history-type').value;
+    adminWorkHistoryState.pageSize=5;
+    adminWorkHistoryState.page=1;
+    await renderAdminWork();
+  });
+  $('work-history-clear').onclick=async()=>{
+    Object.assign(adminWorkHistoryState,{page:1,pageSize:5,search:'',type:'all'});
+    await renderAdminWork();
+  };
+  $('work-history-prev').onclick=async()=>{if(adminWorkHistoryState.page>1){adminWorkHistoryState.page-=1;await renderAdminWork()}};
+  $('work-history-next').onclick=async()=>{if(adminWorkHistoryState.page<history.totalPages){adminWorkHistoryState.page+=1;await renderAdminWork()}};
   document.querySelectorAll('[data-delete-work]').forEach(btn=>btn.addEventListener('click',async()=>{
     if(!confirm('¿Eliminar este registro de horas?'))return;
     try{await api('/api/work-logs/'+btn.dataset.deleteWork,{method:'DELETE'});notify('Registro eliminado.');await renderAdminWork()}catch(err){notify(err.message,'error')}
@@ -614,6 +662,75 @@ async function renderAdminFunds(){
   const rows=await api('/api/fund-movements'),totals={};rows.forEach(x=>{totals[x.fund_name]=(totals[x.fund_name]||0)+(x.movement_type==='Ingreso'?1:-1)*Number(x.amount||0)});const names=[...new Set(['Fondo de reserva','Fondo operativo',...Object.keys(totals)])];
   $('admin-fondos').innerHTML=`<div class="section-head"><div><h2>Fondos de la cooperativa</h2><p class="muted">Consultá los saldos y registrá los movimientos de cada fondo.</p></div></div><div class="grid3">${names.map(n=>`<div class="card"><div class="metric-label">${esc(n)}</div><div class="metric">${money(totals[n]||0)}</div></div>`).join('')}</div><form id="fund-form" class="form-card" style="margin-top:14px"><h3>Registrar movimiento de fondo</h3><div class="form-grid"><label>Fondo<input id="fund-name" value="Fondo de reserva" required></label><label>Tipo<select id="fund-type"><option>Ingreso</option><option>Egreso</option></select></label><label>Monto ($)<input id="fund-amount" type="number" min="1" step="100" required></label><label>Fecha<input id="fund-date" type="date" required></label><label style="grid-column:1/-1">Motivo<input id="fund-reason" maxlength="180"></label></div><div class="actions"><button class="primary">Registrar</button></div></form><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Fondo</th><th>Tipo</th><th>Monto</th><th>Motivo</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${displayDate(x.movement_date)}</td><td>${esc(x.fund_name)}</td><td>${esc(x.movement_type)}</td><td>${money(x.amount)}</td><td>${esc(x.reason||'—')}</td></tr>`).join('')}</tbody></table></div>`;
   $('fund-date').value=new Date().toISOString().slice(0,10);$('fund-form').onsubmit=async e=>{e.preventDefault();try{await api('/api/fund-movements',{method:'POST',body:JSON.stringify({fundName:$('fund-name').value,movementType:$('fund-type').value,amount:Number($('fund-amount').value),movementDate:$('fund-date').value,reason:$('fund-reason').value})});notify('Movimiento de fondo registrado.');await renderAdminFunds()}catch(err){notify(err.message,'error')}};
+}
+
+
+async function renderAdminReport(){
+  const now=new Date();
+  const today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  if(!reportUiState.to)reportUiState.to=today;
+  if(!reportUiState.from)reportUiState.from=`${today.slice(0,7)}-01`;
+  const data=await api(`/api/admin-report?from=${encodeURIComponent(reportUiState.from)}&to=${encodeURIComponent(reportUiState.to)}`);
+  const maxHours=Math.max(1,...data.hoursByMember.map(x=>Number(x.totalHours||0)));
+  const recent=data.financialMovements.slice(0,10);
+  const hoursRows=data.hoursByMember.slice(0,10);
+  $('admin-reporte').innerHTML=`
+    <div class="section-head report-title-row">
+      <div><h2>Reporte de gestión</h2><p class="muted">Una vista consolidada de la actividad financiera y operativa de la cooperativa.</p></div>
+      <button class="primary" id="report-export-pdf" type="button">Exportar PDF</button>
+    </div>
+    <form id="report-period-form" class="report-period-card">
+      <label>Desde<input id="report-from" type="date" value="${esc(reportUiState.from)}" required></label>
+      <label>Hasta<input id="report-to" type="date" value="${esc(reportUiState.to)}" required></label>
+      <button class="secondary" type="submit">Actualizar período</button>
+    </form>
+    <div class="report-metrics">
+      <div class="card"><div class="metric-label">Ingresos</div><div class="metric">${money(data.finance.income)}</div><div class="helper">${data.finance.movements} movimientos en el período</div></div>
+      <div class="card"><div class="metric-label">Gastos</div><div class="metric">${money(data.finance.expense)}</div><div class="helper">Registrados en Ingresos y gastos</div></div>
+      <div class="card"><div class="metric-label">Saldo del período</div><div class="metric">${money(data.finance.balance)}</div><div class="helper">Ingresos menos gastos</div></div>
+      <div class="card"><div class="metric-label">Retribuciones estimadas</div><div class="metric">${money(data.estimatedRetributions)}</div><div class="helper">Según horas y tarifas vigentes</div></div>
+    </div>
+    <div class="report-secondary-metrics">
+      <div><span>Socios activos</span><strong>${data.activeMembers}</strong></div>
+      <div><span>Horas trabajadas</span><strong>${Number(data.work.totalHours||0).toLocaleString('es-AR')} h</strong></div>
+      <div><span>Transferencias</span><strong>${money(data.transfers.amount)}</strong><small>${data.transfers.count} registradas</small></div>
+      <div><span>Saldo actual de fondos</span><strong>${money(data.funds.currentBalance)}</strong></div>
+    </div>
+    <div class="report-columns">
+      <section class="card report-card">
+        <div class="section-head"><div><h3>Trabajo del período</h3><p class="muted">Distribución de horas registradas.</p></div></div>
+        <div class="report-work-breakdown">
+          ${[['Habituales',data.work.regularHours],['Domingos',data.work.sundayHours],['Feriados',data.work.holidayHours]].map(([label,value])=>`<div><div class="report-breakdown-label"><span>${label}</span><strong>${Number(value||0).toLocaleString('es-AR')} h</strong></div><div class="report-bar"><span style="width:${data.work.totalHours?Math.max(2,Number(value||0)/data.work.totalHours*100):0}%"></span></div></div>`).join('')}
+        </div>
+        <div class="helper report-note">Tarifa habitual: ${money(data.rates.normalRate)} · Tarifa domingo/feriado: ${money(data.rates.specialRate)}</div>
+      </section>
+      <section class="card report-card">
+        <div class="section-head"><div><h3>Fondos</h3><p class="muted">Saldo acumulado por fondo.</p></div></div>
+        <div class="report-fund-list">${data.funds.balances.length?data.funds.balances.map(f=>`<div><span>${esc(f.fund_name)}</span><strong>${money(f.balance)}</strong></div>`).join(''):'<div class="empty">No hay fondos registrados.</div>'}</div>
+        <div class="helper report-note">En el período: +${money(data.funds.periodIncome)} · −${money(data.funds.periodExpense)}</div>
+      </section>
+    </div>
+    <section class="card report-card">
+      <div class="section-head"><div><h3>Horas por asociado</h3><p class="muted">Asociados con mayor cantidad de horas dentro del período.</p></div></div>
+      ${hoursRows.length?`<div class="report-member-list">${hoursRows.map(r=>`<div class="report-member-row"><div><strong>${esc(r.fullName)}</strong><span>${Number(r.regularHours||0).toLocaleString('es-AR')} h habituales · ${Number(r.sundayHours||0).toLocaleString('es-AR')} h domingo · ${Number(r.holidayHours||0).toLocaleString('es-AR')} h feriado</span></div><div class="report-member-total">${Number(r.totalHours||0).toLocaleString('es-AR')} h</div><div class="report-member-bar"><span style="width:${Number(r.totalHours||0)/maxHours*100}%"></span></div></div>`).join('')}</div>`:'<div class="empty">No hay horas registradas en este período.</div>'}
+    </section>
+    <section class="card report-card">
+      <div class="section-head"><div><h3>Movimientos financieros recientes</h3><p class="muted">Últimos movimientos comprendidos en el período seleccionado.</p></div></div>
+      ${recent.length?`<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Monto</th></tr></thead><tbody>${recent.map(x=>`<tr><td>${displayDate(x.movement_date)}</td><td><span class="badge ${x.movement_type==='Gasto'?'off':'info'}">${esc(x.movement_type)}</span></td><td>${esc(x.concept)}</td><td>${money(x.amount)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No hay movimientos financieros en este período.</div>'}
+    </section>`;
+
+  $('report-period-form').onsubmit=async e=>{
+    e.preventDefault();
+    const from=$('report-from').value,to=$('report-to').value;
+    if(!from||!to){notify('Seleccioná ambas fechas.','error');return}
+    if(from>to){notify('La fecha desde no puede ser posterior a la fecha hasta.','error');return}
+    reportUiState.from=from;reportUiState.to=to;
+    await renderAdminReport();
+  };
+  $('report-export-pdf').onclick=async()=>{
+    const btn=$('report-export-pdf'),old=btn.textContent;btn.disabled=true;btn.textContent='Generando PDF...';
+    try{await downloadAdminReportPdf(reportUiState.from,reportUiState.to);notify('Reporte PDF generado.')}catch(err){notify(err.message,'error')}finally{btn.disabled=false;btn.textContent=old}
+  };
 }
 
 function tallyHtml(m) {

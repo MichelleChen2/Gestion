@@ -255,6 +255,137 @@ async function getRetribution(memberId) {
   return rows[0];
 }
 
+
+function reportPeriod(rawFrom, rawTo) {
+  const today = new Date().toISOString().slice(0,10);
+  const firstDay = `${today.slice(0,7)}-01`;
+  const valid = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+  const from = valid(rawFrom) ? String(rawFrom) : firstDay;
+  const to = valid(rawTo) ? String(rawTo) : today;
+  if (from > to) {
+    const err = new Error('La fecha desde no puede ser posterior a la fecha hasta.');
+    err.statusCode = 400;
+    throw err;
+  }
+  return { from, to };
+}
+
+async function getAdminReportData(from, to) {
+  const params = [from, to];
+  const [membersRes, workRes, byMemberRes, cfgRes, financeRes, movementsRes, transfersRes, fundPeriodRes, fundBalancesRes] = await Promise.all([
+    pool.query(`SELECT COUNT(*)::int AS active_members FROM members WHERE active=TRUE AND verification_pending=FALSE`),
+    pool.query(`
+      WITH classified AS (
+        SELECT w.hours,
+          CASE
+            WHEN h.holiday_date IS NOT NULL THEN 'holiday'
+            WHEN EXTRACT(DOW FROM w.work_date)=0 THEN 'sunday'
+            ELSE 'regular'
+          END AS work_type
+        FROM work_logs w
+        LEFT JOIN holidays h ON h.holiday_date=w.work_date
+        WHERE w.work_date BETWEEN $1::date AND $2::date
+      )
+      SELECT COUNT(*)::int AS entries,
+        COALESCE(SUM(hours),0)::float8 AS total_hours,
+        COALESCE(SUM(hours) FILTER (WHERE work_type='regular'),0)::float8 AS regular_hours,
+        COALESCE(SUM(hours) FILTER (WHERE work_type='sunday'),0)::float8 AS sunday_hours,
+        COALESCE(SUM(hours) FILTER (WHERE work_type='holiday'),0)::float8 AS holiday_hours
+      FROM classified
+    `, params),
+    pool.query(`
+      SELECT m.id AS member_id,m.full_name,
+        COALESCE(SUM(w.hours),0)::float8 AS total_hours,
+        COALESCE(SUM(w.hours) FILTER (WHERE h.holiday_date IS NULL AND EXTRACT(DOW FROM w.work_date)<>0),0)::float8 AS regular_hours,
+        COALESCE(SUM(w.hours) FILTER (WHERE h.holiday_date IS NULL AND EXTRACT(DOW FROM w.work_date)=0),0)::float8 AS sunday_hours,
+        COALESCE(SUM(w.hours) FILTER (WHERE h.holiday_date IS NOT NULL),0)::float8 AS holiday_hours
+      FROM work_logs w
+      JOIN members m ON m.id=w.member_id
+      LEFT JOIN holidays h ON h.holiday_date=w.work_date
+      WHERE w.work_date BETWEEN $1::date AND $2::date
+      GROUP BY m.id,m.full_name
+      ORDER BY total_hours DESC,m.full_name
+    `, params),
+    pool.query(`SELECT normal_rate::float8,special_rate::float8 FROM retribution_settings WHERE singleton=TRUE`),
+    pool.query(`
+      SELECT
+        COALESCE(SUM(amount) FILTER (WHERE movement_type='Ingreso'),0)::float8 AS income,
+        COALESCE(SUM(amount) FILTER (WHERE movement_type='Gasto'),0)::float8 AS expense,
+        COUNT(*)::int AS movements
+      FROM financial_movements
+      WHERE movement_date BETWEEN $1::date AND $2::date
+    `, params),
+    pool.query(`
+      SELECT id,movement_type,concept,amount::float8,movement_date
+      FROM financial_movements
+      WHERE movement_date BETWEEN $1::date AND $2::date
+      ORDER BY movement_date DESC,id DESC
+    `, params),
+    pool.query(`
+      SELECT COUNT(*)::int AS count,COALESCE(SUM(amount),0)::float8 AS amount
+      FROM retribution_transfers
+      WHERE transferred_at::date BETWEEN $1::date AND $2::date
+    `, params),
+    pool.query(`
+      SELECT
+        COALESCE(SUM(amount) FILTER (WHERE movement_type='Ingreso'),0)::float8 AS income,
+        COALESCE(SUM(amount) FILTER (WHERE movement_type='Egreso'),0)::float8 AS expense
+      FROM fund_movements
+      WHERE movement_date BETWEEN $1::date AND $2::date
+    `, params),
+    pool.query(`
+      SELECT fund_name,
+        COALESCE(SUM(CASE WHEN movement_type='Ingreso' THEN amount ELSE -amount END),0)::float8 AS balance
+      FROM fund_movements
+      GROUP BY fund_name
+      ORDER BY fund_name
+    `)
+  ]);
+
+  const work = workRes.rows[0] || {};
+  const cfg = cfgRes.rows[0] || { normal_rate:0, special_rate:0 };
+  const finance = financeRes.rows[0] || {};
+  const transfers = transfersRes.rows[0] || {};
+  const fundPeriod = fundPeriodRes.rows[0] || {};
+  const normalHours = Number(work.regular_hours || 0);
+  const specialHours = Number(work.sunday_hours || 0) + Number(work.holiday_hours || 0);
+  const estimatedRetributions = normalHours * Number(cfg.normal_rate || 0) + specialHours * Number(cfg.special_rate || 0);
+  const fundBalances = fundBalancesRes.rows.map(row => ({ fund_name:row.fund_name, balance:Number(row.balance || 0) }));
+
+  return {
+    period:{ from, to },
+    activeMembers:Number(membersRes.rows[0]?.active_members || 0),
+    work:{
+      entries:Number(work.entries || 0),
+      totalHours:Number(work.total_hours || 0),
+      regularHours:normalHours,
+      sundayHours:Number(work.sunday_hours || 0),
+      holidayHours:Number(work.holiday_hours || 0)
+    },
+    rates:{ normalRate:Number(cfg.normal_rate || 0), specialRate:Number(cfg.special_rate || 0) },
+    estimatedRetributions,
+    transfers:{ count:Number(transfers.count || 0), amount:Number(transfers.amount || 0) },
+    finance:{
+      income:Number(finance.income || 0),
+      expense:Number(finance.expense || 0),
+      balance:Number(finance.income || 0)-Number(finance.expense || 0),
+      movements:Number(finance.movements || 0)
+    },
+    funds:{
+      periodIncome:Number(fundPeriod.income || 0),
+      periodExpense:Number(fundPeriod.expense || 0),
+      currentBalance:fundBalances.reduce((sum,row)=>sum+Number(row.balance || 0),0),
+      balances:fundBalances
+    },
+    hoursByMember:byMemberRes.rows.map(row => ({
+      memberId:Number(row.member_id), fullName:row.full_name,
+      totalHours:Number(row.total_hours || 0), regularHours:Number(row.regular_hours || 0),
+      sundayHours:Number(row.sunday_hours || 0), holidayHours:Number(row.holiday_hours || 0)
+    })),
+    financialMovements:movementsRes.rows
+  };
+}
+
 async function motionTally(motionId) {
   const motionRes = await pool.query('SELECT * FROM motions WHERE id=$1', [motionId]);
   const motion = motionRes.rows[0];
@@ -641,12 +772,61 @@ app.put('/api/authorities/:role', auth, requireRole('admin'), async (req,res) =>
 });
 
 app.get('/api/work-logs', auth, async (req, res) => {
+  const paginated = req.user.role === 'admin' && String(req.query.paginated || '') === '1';
   const params = [];
-  let where = '';
+  const conditions = [];
+
   if (req.user.role === 'associate') {
     params.push(req.user.memberId);
-    where = 'WHERE w.member_id=$1';
+    conditions.push(`w.member_id=$${params.length}`);
   }
+
+  if (paginated) {
+    const search = String(req.query.search || '').trim().slice(0,80);
+    const type = String(req.query.type || 'all');
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`m.full_name ILIKE $${params.length}`);
+    }
+    if (type === 'holiday') conditions.push('h.holiday_date IS NOT NULL');
+    if (type === 'sunday') conditions.push('h.holiday_date IS NULL AND EXTRACT(DOW FROM w.work_date)=0');
+    if (type === 'regular') conditions.push('h.holiday_date IS NULL AND EXTRACT(DOW FROM w.work_date)<>0');
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const baseFrom = `
+    FROM work_logs w
+    JOIN members m ON m.id=w.member_id
+    LEFT JOIN holidays h ON h.holiday_date=w.work_date
+    ${where}`;
+
+  if (paginated) {
+    const requestedPage = Math.max(1, Number.parseInt(req.query.page,10) || 1);
+    const pageSize = 5;
+    const { rows: countRows } = await pool.query(`SELECT COUNT(*)::int AS total ${baseFrom}`, params);
+    const total = Number(countRows[0]?.total || 0);
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const page = Math.min(requestedPage, totalPages);
+    const offset = (page - 1) * pageSize;
+    const rowParams = [...params, pageSize, offset];
+    const limitParam = `$${rowParams.length - 1}`;
+    const offsetParam = `$${rowParams.length}`;
+    const { rows } = await pool.query(`
+      SELECT w.id,w.member_id,w.work_date,w.hours::float8,w.description,w.created_at,m.full_name,
+        (EXTRACT(DOW FROM w.work_date)=0 OR h.holiday_date IS NOT NULL) AS special,
+        CASE
+          WHEN h.holiday_date IS NOT NULL THEN 'holiday'
+          WHEN EXTRACT(DOW FROM w.work_date)=0 THEN 'sunday'
+          ELSE 'regular'
+        END AS work_type,
+        h.description AS holiday_description
+      ${baseFrom}
+      ORDER BY w.work_date DESC,w.id DESC
+      LIMIT ${limitParam} OFFSET ${offsetParam}
+    `, rowParams);
+    return res.json({ items: rows, total, page, pageSize, totalPages });
+  }
+
   const { rows } = await pool.query(`
     SELECT w.id,w.member_id,w.work_date,w.hours::float8,w.description,w.created_at,m.full_name,
       (EXTRACT(DOW FROM w.work_date)=0 OR h.holiday_date IS NOT NULL) AS special,
@@ -656,10 +836,7 @@ app.get('/api/work-logs', auth, async (req, res) => {
         ELSE 'regular'
       END AS work_type,
       h.description AS holiday_description
-    FROM work_logs w
-    JOIN members m ON m.id=w.member_id
-    LEFT JOIN holidays h ON h.holiday_date=w.work_date
-    ${where}
+    ${baseFrom}
     ORDER BY w.work_date DESC,w.id DESC
   `, params);
   res.json(rows);
@@ -813,6 +990,103 @@ app.post('/api/retributions/:memberId/transfer', auth, requireRole('admin'), asy
   res.json(rows[0]);
 });
 
+
+
+app.get('/api/admin-report', auth, requireRole('admin'), async (req,res) => {
+  const period = reportPeriod(req.query.from, req.query.to);
+  res.json(await getAdminReportData(period.from, period.to));
+});
+
+app.get('/api/admin-report/report.pdf', auth, requireRole('admin'), async (req,res) => {
+  const period = reportPeriod(req.query.from, req.query.to);
+  const data = await getAdminReportData(period.from, period.to);
+  const safePeriod = `${period.from}-a-${period.to}`;
+  res.setHeader('Content-Type','application/pdf');
+  res.setHeader('Content-Disposition',`attachment; filename="reporte-gestion-${safePeriod}.pdf"`);
+
+  const doc = new PDFDocument({ size:'A4', margin:44, info:{ Title:'Reporte de gestión - CoopGestión', Author:'CoopGestión' } });
+  doc.pipe(res);
+  const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const moneyPdf = value => '$ ' + Number(value || 0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2});
+  const datePdf = value => { const [y,m,d]=String(value||'').slice(0,10).split('-'); return y&&m&&d?`${d}/${m}/${y}`:'—'; };
+  const leftMargin = doc.page.margins.left;
+  const ensureSpace = height => {
+    if (doc.y + height > doc.page.height - doc.page.margins.bottom) doc.addPage();
+    doc.x = leftMargin;
+  };
+  const section = title => {
+    ensureSpace(38);
+    doc.moveDown(.65);
+    doc.font('Helvetica-Bold').fontSize(13).fillColor('#111827').text(title,leftMargin,doc.y,{width:pageWidth});
+    doc.moveDown(.35);
+    doc.x = leftMargin;
+  };
+  const metric = (label,value,x,y,width) => {
+    doc.font('Helvetica-Bold').fontSize(14).fillColor('#111827').text(String(value),x,y,{width,align:'center'});
+    doc.font('Helvetica').fontSize(8).fillColor('#64748b').text(label,x,y+19,{width,align:'center'});
+  };
+  const drawTable = (headers,widths,rows) => {
+    const x0=doc.page.margins.left;
+    const drawHeader=()=>{ensureSpace(25);const y=doc.y;doc.rect(x0,y,pageWidth,23).fill('#eef2f7');let x=x0;headers.forEach((h,i)=>{doc.fillColor('#111827').font('Helvetica-Bold').fontSize(8).text(h,x+4,y+7,{width:widths[i]-8});x+=widths[i]});doc.y=y+23};
+    drawHeader();
+    for(const values of rows){
+      if(doc.y+30>doc.page.height-doc.page.margins.bottom){doc.addPage();drawHeader()}
+      const y=doc.y;let x=x0;
+      values.forEach((value,i)=>{doc.fillColor('#111827').font('Helvetica').fontSize(8).text(String(value ?? '—'),x+4,y+6,{width:widths[i]-8,height:20,ellipsis:true});x+=widths[i]});
+      doc.moveTo(x0,y+27).lineTo(x0+pageWidth,y+27).strokeColor('#e2e8f0').stroke();doc.y=y+28;
+    }
+    doc.x=x0;
+  };
+
+  doc.font('Helvetica-Bold').fontSize(20).fillColor('#111827').text('CoopGestión');
+  doc.font('Helvetica').fontSize(10).fillColor('#64748b').text('Reporte financiero y operativo');
+  doc.moveDown(.8);
+  doc.font('Helvetica-Bold').fontSize(14).fillColor('#111827').text(`Período: ${datePdf(period.from)} al ${datePdf(period.to)}`);
+
+  section('Resumen del período');
+  const metrics=[
+    ['Ingresos',moneyPdf(data.finance.income)],['Gastos',moneyPdf(data.finance.expense)],['Saldo',moneyPdf(data.finance.balance)],
+    ['Retribuciones estimadas',moneyPdf(data.estimatedRetributions)],['Socios activos',data.activeMembers],['Horas trabajadas',`${data.work.totalHours.toLocaleString('es-AR')} h`]
+  ];
+  const colW=pageWidth/3,startY=doc.y;
+  metrics.forEach((item,i)=>metric(item[0],item[1],doc.page.margins.left+(i%3)*colW,startY+Math.floor(i/3)*42,colW-6));
+  doc.y=startY+88;
+
+  section('Trabajo y retribuciones');
+  drawTable(['Concepto','Cantidad'],[300,pageWidth-300],[
+    ['Horas habituales',`${data.work.regularHours.toLocaleString('es-AR')} h`],
+    ['Horas domingo',`${data.work.sundayHours.toLocaleString('es-AR')} h`],
+    ['Horas feriado',`${data.work.holidayHours.toLocaleString('es-AR')} h`],
+    ['Transferencias registradas',`${data.transfers.count} · ${moneyPdf(data.transfers.amount)}`]
+  ]);
+
+  if(data.hoursByMember.length){
+    section('Horas por asociado');
+    drawTable(['Asociado','Habituales','Domingos','Feriados','Total'],[205,72,72,72,pageWidth-421],data.hoursByMember.map(r=>[
+      r.fullName,`${r.regularHours.toLocaleString('es-AR')} h`,`${r.sundayHours.toLocaleString('es-AR')} h`,`${r.holidayHours.toLocaleString('es-AR')} h`,`${r.totalHours.toLocaleString('es-AR')} h`
+    ]));
+  }
+
+  section('Movimientos financieros');
+  if(data.financialMovements.length){
+    drawTable(['Fecha','Tipo','Concepto','Monto'],[76,64,255,pageWidth-395],data.financialMovements.map(r=>[datePdf(r.movement_date),r.movement_type,r.concept,moneyPdf(r.amount)]));
+  } else {
+    doc.font('Helvetica').fontSize(9).fillColor('#64748b').text('No hay movimientos financieros registrados en el período.',leftMargin,doc.y,{width:pageWidth});
+  }
+
+  section('Fondos');
+  doc.font('Helvetica').fontSize(9).fillColor('#111827').text(`Movimientos del período: ingresos ${moneyPdf(data.funds.periodIncome)} · egresos ${moneyPdf(data.funds.periodExpense)}`,leftMargin,doc.y,{width:pageWidth});
+  doc.moveDown(.5);
+  if(data.funds.balances.length){
+    drawTable(['Fondo','Saldo actual'],[340,pageWidth-340],data.funds.balances.map(r=>[r.fund_name,moneyPdf(r.balance)]));
+  } else {
+    doc.font('Helvetica').fontSize(9).fillColor('#64748b').text('No hay fondos registrados.',leftMargin,doc.y,{width:pageWidth});
+  }
+
+  ensureSpace(40);
+  doc.moveDown(1).font('Helvetica').fontSize(8).fillColor('#64748b').text('Reporte generado por CoopGestión a partir de la información persistida en el sistema.',leftMargin,doc.y,{width:pageWidth});
+  doc.end();
+});
 
 app.get('/api/financial-movements', auth, requireRole('admin'), async (req,res) => {
   const { rows } = await pool.query(`SELECT id,movement_type,concept,amount::float8,movement_date,created_at FROM financial_movements ORDER BY movement_date DESC,id DESC`);
@@ -969,8 +1243,19 @@ app.get('/api/motions/:id/report.pdf', auth, requireRole('admin'), async (req, r
   const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
   const fmtDateTime = value => value ? new Intl.DateTimeFormat('es-AR',{dateStyle:'short',timeStyle:'medium',timeZone:'America/Argentina/Buenos_Aires'}).format(new Date(value)) : '—';
   const ensureSpace = height => { if (doc.y + height > doc.page.height - doc.page.margins.bottom) doc.addPage(); };
-  const section = title => { ensureSpace(42); doc.moveDown(.6).font('Helvetica-Bold').fontSize(13).fillColor('#111827').text(title); doc.moveDown(.35); };
-  const field = (label,value) => { doc.font('Helvetica-Bold').fontSize(8).fillColor('#64748b').text(label.toUpperCase()); doc.font('Helvetica').fontSize(10).fillColor('#111827').text(String(value ?? '—')); doc.moveDown(.45); };
+  const section = title => {
+    ensureSpace(42);
+    doc.x = doc.page.margins.left;
+    doc.moveDown(.6);
+    doc.font('Helvetica-Bold').fontSize(13).fillColor('#111827').text(title, doc.page.margins.left, doc.y, { width: pageWidth });
+    doc.moveDown(.35);
+  };
+  const field = (label,value) => {
+    doc.x = doc.page.margins.left;
+    doc.font('Helvetica-Bold').fontSize(8).fillColor('#64748b').text(label.toUpperCase(), doc.page.margins.left, doc.y, { width: pageWidth });
+    doc.font('Helvetica').fontSize(10).fillColor('#111827').text(String(value ?? '—'), doc.page.margins.left, doc.y, { width: pageWidth });
+    doc.moveDown(.45);
+  };
 
   doc.font('Helvetica-Bold').fontSize(20).fillColor('#111827').text('CoopGestión');
   doc.font('Helvetica').fontSize(10).fillColor('#64748b').text('Informe histórico de moción cerrada');
@@ -1026,9 +1311,17 @@ app.get('/api/motions/:id/report.pdf', auth, requireRole('admin'), async (req, r
   }
 
   section('Registro histórico');
-  doc.font('Helvetica').fontSize(9).fillColor('#475569').text('Este informe se genera a partir del snapshot congelado al momento del cierre. Altas, bajas, reincorporaciones o cambios de autoridades posteriores no modifican estos datos.',{width:pageWidth});
+  doc.x = doc.page.margins.left;
+  doc.font('Helvetica').fontSize(9).fillColor('#475569').text(
+    'Este informe se genera a partir del snapshot congelado al momento del cierre. Altas, bajas, reincorporaciones o cambios de autoridades posteriores no modifican estos datos.',
+    doc.page.margins.left, doc.y, { width: pageWidth }
+  );
   doc.moveDown(1);
-  doc.font('Helvetica').fontSize(8).fillColor('#94a3b8').text(`Generado: ${fmtDateTime(new Date().toISOString())} · Moción #${motion.id}`);
+  doc.x = doc.page.margins.left;
+  doc.font('Helvetica').fontSize(8).fillColor('#94a3b8').text(
+    `Generado: ${fmtDateTime(new Date().toISOString())} · Moción #${motion.id}`,
+    doc.page.margins.left, doc.y, { width: pageWidth }
+  );
   doc.end();
 });
 
