@@ -691,6 +691,58 @@ app.post('/api/work-logs', auth, async (req, res) => {
   }
 });
 
+app.post('/api/work-logs/bulk', auth, requireRole('admin'), async (req, res) => {
+  const entries = Array.isArray(req.body.entries) ? req.body.entries : [];
+  if (!entries.length) return res.status(400).json({ error: 'Agregá al menos un registro para la carga masiva.' });
+  if (entries.length > 200) return res.status(400).json({ error: 'La carga masiva admite hasta 200 registros por vez.' });
+
+  const results = [];
+  const seen = new Set();
+  for (let index = 0; index < entries.length; index += 1) {
+    const item = entries[index] || {};
+    const memberId = Number(item.memberId);
+    const workDate = String(item.workDate || '');
+    const hours = Number(item.hours);
+    const description = String(item.description || '').trim().slice(0, 180);
+    const key = `${memberId}|${workDate}`;
+
+    if (!memberId || !/^\d{4}-\d{2}-\d{2}$/.test(workDate) || !(hours > 0 && hours < 24)) {
+      results.push({ index, ok: false, memberId, workDate, error: 'Fecha, socio u horas inválidas.' });
+      continue;
+    }
+    if (seen.has(key)) {
+      results.push({ index, ok: false, memberId, workDate, error: 'El mismo socio y fecha están repetidos dentro de la carga.' });
+      continue;
+    }
+    seen.add(key);
+
+    const member = await getMember(memberId);
+    if (!member || !member.active || member.verification_pending) {
+      results.push({ index, ok: false, memberId, workDate, error: 'El socio seleccionado no está activo y habilitado.' });
+      continue;
+    }
+
+    try {
+      const { rows } = await pool.query(`
+        INSERT INTO work_logs(member_id,work_date,hours,description)
+        VALUES($1,$2,$3,$4)
+        RETURNING id,member_id,work_date,hours::float8,description,created_at
+      `, [memberId, workDate, hours, description || null]);
+      results.push({ index, ok: true, memberId, workDate, record: rows[0] });
+    } catch (err) {
+      if (err.code === '23505') {
+        results.push({ index, ok: false, memberId, workDate, error: 'Ya existe una carga para ese socio en esa fecha.' });
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  const successCount = results.filter(x => x.ok).length;
+  res.json({ successCount, failureCount: results.length - successCount, results });
+});
+
+
 app.delete('/api/work-logs/:id', auth, requireRole('admin'), async (req, res) => {
   await pool.query('DELETE FROM work_logs WHERE id=$1', [req.params.id]);
   res.status(204).end();

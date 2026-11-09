@@ -168,3 +168,12 @@ El login se mostrará correctamente porque los assets usan rutas relativas. Para
 
 ### Contraseñas de asociados
 Las credenciales creadas por Administración usan una contraseña temporal. Los asociados deben cambiarla en su primer ingreso y luego pueden actualizarla desde **Mi perfil > Seguridad**.
+
+
+## Carga masiva de horas
+
+En **Administración → Trabajo** se mantiene la carga individual y se agrega una sección de **Carga masiva de horas**. El administrador puede completar varias filas en una tabla o importar un CSV con las columnas `cuit,fecha,horas,descripcion`.
+
+Se mantienen las mismas reglas de la carga individual: socio activo/habilitado, horas mayores a 0 y menores a 24 y un único registro por socio y fecha. Si una fila falla, las demás filas válidas se guardan y el resultado muestra el detalle por fila.
+
+Archivo de ejemplo: `samples/carga_masiva_horas_prueba.csv`.
